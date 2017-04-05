@@ -3,14 +3,20 @@ if Code.ensure_loaded?(Snappyex) do
   defmodule Ecto.Adapters.SnappyData.Connection do
     @moduledoc false
 
-    @default_port 1531
+    @default_port 1527
+    @default_host "127.0.0.1"
     @behaviour Ecto.Adapters.SQL.Connection
+
     def child_spec(opts) do
       opts =
         opts
         |> Keyword.update(:port, @default_port, &normalize_port/1)
         |> Keyword.put(:types, true)
       Snappyex.child_spec(opts)
+    end
+
+    def init({repo, opts}) do
+      opts
     end
 
     defp normalize_port(port) when is_binary(port), do: String.to_integer(port)
@@ -38,8 +44,7 @@ if Code.ensure_loaded?(Snappyex) do
     ## Query
 
     alias Ecto.Query
-    alias Ecto.Query.QueryExpr
-    alias Ecto.Query.JoinExpr
+    alias Ecto.Query.{BooleanExpr, JoinExpr, QueryExpr}
 
     def insert(prefix, table, header, rows, _on_conflict, returning) do
       prefix = unless prefix do
@@ -185,12 +190,21 @@ if Code.ensure_loaded?(Snappyex) do
     defp lock(lock_clause), do: lock_clause
 
     defp boolean(_name, [], _sources, _query), do: []
-    defp boolean(name, query_exprs, sources, query) do
-      name <> " " <>
-        Enum.map_join(query_exprs, " AND ", fn
-          %QueryExpr{expr: expr} ->
-            "(" <> expr(expr, sources, query) <> ")"
-        end)
+    defp boolean(name, [%{expr: expr, op: op} | query_exprs], sources, query) do
+      [name |
+       Enum.reduce(query_exprs, {op, paren_expr(expr, sources, query)}, fn
+         %BooleanExpr{expr: expr, op: op}, {op, acc} ->
+           {op, [acc, operator_to_boolean(op), paren_expr(expr, sources, query)]}
+         %BooleanExpr{expr: expr, op: op}, {_, acc} ->
+           {op, [?(, acc, ?), operator_to_boolean(op), paren_expr(expr, sources, query)]}
+       end) |> elem(1)]
+    end
+
+    defp operator_to_boolean(:and), do: " AND "
+    defp operator_to_boolean(:or), do: " OR "
+
+    defp paren_expr(expr, sources, query) do
+      [?(, expr(expr, sources, query), ?)]
     end
 
     defp assemble(list) do
@@ -243,13 +257,9 @@ if Code.ensure_loaded?(Snappyex) do
     defp index_expr(literal),
       do: quote_name(literal)
 
-    defp expr({:^, [], [ix]}, _sources, _query) do
-      "$#{ix+1}"
-    end
-
     defp expr({{:., _, [{:&, _, [idx]}, field]}, _, []}, sources, _query) when is_atom(field) do
       {_, name, _} = elem(sources, idx)
-      "#{name}.#{quote_name(field)}"
+      "#{name}.#{field}"
     end
 
     defp expr({:&, _, [idx, fields, _counter]}, sources, query) do
