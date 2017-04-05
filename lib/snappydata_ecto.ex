@@ -1,6 +1,6 @@
-defmodule SnappydataEcto do
+defmodule Snappydata.Ecto do
   @moduledoc """
-  Documentation for SnappydataEcto.
+  Documentation for Snappydata.Ecto.
   """
 
   @doc """
@@ -8,7 +8,7 @@ defmodule SnappydataEcto do
 
   ## Examples
 
-      iex> SnappydataEcto.hello
+      iex> Snappydata.Ecto.hello
       :world
 
   """

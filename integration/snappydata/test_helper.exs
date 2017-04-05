@@ -9,9 +9,9 @@ Application.put_env(:ecto, :lock_for_update, "FOR UPDATE")
 Application.put_env(:ecto, :primary_key_type, :id)
 
 # Configure SnappyData connection
-Application.put_env(:ecto, :snappydata_test_url,
-  "ecto://" <> (System.get_env("SNAPPYDATA_URL") || "localhost:1531")
-)
+#Application.put_env(:ecto, :snappydata_test_url,
+#  "ecto://" <> (System.get_env("SNAPPYDATA_URL") || "localhost:1527")
+#)
 
 # Load support files
 Code.require_file "../support/repo.exs", __DIR__

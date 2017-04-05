@@ -1,4 +1,8 @@
 defmodule Ecto.Adapters.SnappyData do
+
+  # BASED ON https://github.com/elixir-ecto/ecto/blob/master/test/ecto/adapters/postgres_test.exs
+  # Try to keep it synced
+  
   @moduledoc """
   """
 
