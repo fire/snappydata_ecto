@@ -32,7 +32,7 @@ defmodule SnappydataEcto.Mixfile do
   defp deps do
     [{:earmark, "~> 0.1", only: :dev},
      {:ex_doc, "~> 0.7", only: :dev},
-     {:ecto, "~> 2.1.4"},
+     {:ecto, "~> 2.1.0"},
      {:snappyex, git: "https://github.com/fire/snappyex.git", tag: "master"} ]
   end
 end
