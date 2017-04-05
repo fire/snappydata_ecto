@@ -16,12 +16,32 @@ defmodule Snappydata.Ecto.Test do
       field :z, :integer
       field :w, {:array, :integer}
 
-#      has_many :comments, Ecto.Adapters.PostgresTest.Schema2,
-#        references: :x,
-#        foreign_key: :z
-#      has_one :permalink, Ecto.Adapters.PostgresTest.Schema3,
-#        references: :y,
-#        foreign_key: :id
+      has_many :comments, Ecto.Adapters.SnappyData.Test.Schema2,
+        references: :x,
+        foreign_key: :z
+      has_one :permalink, Ecto.Adapters.SnappyData.Test.Schema3,
+        references: :y,
+        foreign_key: :id
+    end
+  end
+
+  defmodule Schema2 do
+    use Ecto.Schema
+
+    schema "schema2" do
+      belongs_to :post, Ecto.Adapters.SnappyData.Test.Schema,
+        references: :x,
+        foreign_key: :z
+    end
+  end
+
+  defmodule Schema3 do
+    use Ecto.Schema
+
+    schema "schema3" do
+      field :list1, {:array, :string}
+      field :list2, {:array, :integer}
+      field :binary, :binary
     end
   end
 
@@ -33,6 +53,18 @@ defmodule Snappydata.Ecto.Test do
   test "from" do
     query = Schema |> select([r], r.x) |> normalize
     assert SQL.all(query) == ~s{SELECT s0.X FROM SCHEMA AS s0}
+  end
+
+  test "from without schema" do
+    query = "posts" |> select([r], r.x) |> normalize
+    assert SQL.all(query) == ~s{SELECT p0.X FROM POSTS AS p0}
+
+    query = "posts" |> select([:x]) |> normalize
+    assert SQL.all(query) == ~s{SELECT p0.X FROM POSTS AS p0}
+
+    assert_raise Ecto.QueryError, ~r"SnappyData requires a schema module when using selector \"p0\" but none was given. Please specify a schema or specify exactly which fields from \"p0\" you desire in query:\n\nfrom p in \"posts\",\n  select: p\n", fn ->
+      SQL.all from(p in "posts", select: p) |> normalize()
+    end
   end
 
   test "the truth" do
