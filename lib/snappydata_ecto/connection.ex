@@ -24,6 +24,16 @@ if Code.ensure_loaded?(Snappyex) do
 
     ## Query
 
+    binary_ops =
+      [==: " = ", !=: " != ", <=: " <= ", >=: " >= ", <: " < ", >: " > ",
+       and: " AND ", or: " OR ", ilike: " ILIKE ", like: " LIKE "]
+
+    @binary_ops Keyword.keys(binary_ops)
+
+    Enum.map(binary_ops, fn {op, str} ->
+      defp handle_call(unquote(op), 2), do: {:binary_op, unquote(str)}
+    end)
+
     def prepare_execute(conn, name, sql, params, opts) do
       query = %Snappyex.Query{name: name, statement: sql}
       DBConnection.prepare_execute(conn, query, params, opts)
@@ -121,21 +131,19 @@ if Code.ensure_loaded?(Snappyex) do
       offset   = offset(query, sources)
       lock     = lock(query.lock)
 
-      assemble([select, from, join, where, group_by, having, order_by, limit, offset, lock])
+      IO.iodata_to_binary([select, from, join, where, group_by, having, order_by, limit, offset, lock])
     end
 
     defp distinct_exprs(_, _), do: ""
 
     defp from(%{from: from} = query, sources) do
       {from, name} = get_source(query, sources, 0, from)
-      "FROM #{from} AS #{name}"
+      [" FROM ", from, " AS " | name]
     end
 
     defp select(%Query{select: %{fields: fields}, distinct: distinct} = query,
                 distinct_exprs, sources) do
-      "SELECT " <>
-        distinct(distinct, distinct_exprs) <>
-        select_fields(fields, sources, query)
+      ["SELECT", distinct(distinct, distinct_exprs), ?\s | select_fields(fields, sources, query)]
     end
 
     defp join(%Query{joins: []}, _sources), do: []
@@ -148,7 +156,7 @@ if Code.ensure_loaded?(Snappyex) do
     end
 
     defp where(%Query{wheres: wheres} = query, sources) do
-      boolean("WHERE", wheres, sources, query)
+      boolean(" WHERE ", wheres, sources, query)
     end
 
     defp group_by(%Query{group_bys: group_bys} = query, sources) do
