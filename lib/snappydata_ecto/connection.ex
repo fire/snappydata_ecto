@@ -50,7 +50,7 @@ if Code.ensure_loaded?(Snappyex) do
       prefix = unless prefix do
         "APP"
       end
-      
+
       values =
         if header == [] do
           "VALUES " <> Enum.map_join(rows, ",", fn _ -> "(DEFAULT)" end)
@@ -72,7 +72,7 @@ if Code.ensure_loaded?(Snappyex) do
     defp on_conflict({query, _, []}, _header) do
       error!(nil, "on_conflict is not supported by SnappyData")
     end
-        
+
     defp insert_each([nil|t], counter, acc),
       do: insert_each(t, counter, acc <> ",DEFAULT")
     defp insert_each([_|t], counter, acc),
@@ -153,8 +153,8 @@ if Code.ensure_loaded?(Snappyex) do
         "" -> []
         _  -> "GROUP BY " <> exprs
       end
-    end   
-    
+    end
+
     defp order_by(%Query{order_bys: order_bys} = query, distinct_exprs, sources) do
       exprs =
         Enum.map_join(order_bys, ", ", fn
@@ -239,7 +239,7 @@ if Code.ensure_loaded?(Snappyex) do
     defp distinct(%QueryExpr{expr: true}, _exprs),  do: "DISTINCT "
     defp distinct(%QueryExpr{expr: false}, _exprs), do: ""
     defp distinct(_query, exprs), do: "DISTINCT ON (" <> exprs <> ") "
-  
+
     defp select_fields([], _sources, _query),
       do: "TRUE"
     defp select_fields(fields, sources, query),
@@ -250,8 +250,8 @@ if Code.ensure_loaded?(Snappyex) do
     defp join_qual(:left),  do: "LEFT OUTER JOIN"
     defp join_qual(:left_lateral),  do: "LEFT OUTER JOIN LATERAL"
     defp join_qual(:right), do: "RIGHT OUTER JOIN"
-    defp join_qual(:full),  do: "FULL OUTER JOIN"   
-        
+    defp join_qual(:full),  do: "FULL OUTER JOIN"
+
     defp index_expr(literal) when is_binary(literal),
       do: literal
     defp index_expr(literal),
@@ -308,7 +308,7 @@ if Code.ensure_loaded?(Snappyex) do
         {:expr, expr} -> expr(expr, sources, query)
       end)
     end
-  
+
     defp handle_call(fun, _arity), do: {:fun, Atom.to_string(fun)}
 
     defp expr(list, sources, query) when is_list(list) do
@@ -340,7 +340,7 @@ if Code.ensure_loaded?(Snappyex) do
     defp expr(literal, _sources, _query) when is_float(literal) do
       String.Chars.Float.to_string(literal) <> "::float"
     end
-    
+
     defp order_by_expr({dir, expr}, sources, query) do
       str = expr(expr, sources, query)
       case dir do
@@ -359,14 +359,14 @@ if Code.ensure_loaded?(Snappyex) do
       #<<?", name::binary, ?">>
       name
       |> String.upcase
-    end  
+    end
 
-    defp quote_table(nil, name) do 
+    defp quote_table(nil, name) do
       name
       |> quote_table
       |> String.upcase
     end
-    defp quote_table(prefix, name) do 
+    defp quote_table(prefix, name) do
       table = quote_table(prefix) <> "." <> quote_table(name)
       String.upcase(table)
     end
@@ -387,13 +387,13 @@ if Code.ensure_loaded?(Snappyex) do
     defp options_expr(options),
       do: " #{options}"
 
-    ## DDL 
+    ## DDL
     alias Ecto.Migration.{Table, Index, Reference, Constraint}
 
     @drops [:drop, :drop_if_exists]
 
 
-    def execute_ddl({command, %Table{}=table, columns}) 
+    def execute_ddl({command, %Table{}=table, columns})
     when command in [:create, :create_if_not_exists] do
       options       = options_expr(table.options)
       pk_definition = case pk_definition(columns) do
@@ -412,7 +412,7 @@ if Code.ensure_loaded?(Snappyex) do
                 execute_ddl({:create, index}) <> ";",
                 ""])
     end
-   
+
     def execute_ddl({:create, %Index{}=index}) do
       fields = Enum.map_join(index.columns, ", ", &index_expr/1)
 
@@ -447,7 +447,7 @@ if Code.ensure_loaded?(Snappyex) do
         _  -> "PRIMARY KEY (" <> Enum.map_join(pks, ", ", &quote_name/1) <> ")"
       end
     end
-    
+
     defp column_definitions(table, columns) do
       Enum.map_join(columns, ", ", &column_definition(table, &1))
     end
@@ -471,7 +471,7 @@ if Code.ensure_loaded?(Snappyex) do
       null    = Keyword.get(opts, :null)
       [default_expr(default, type), null_expr(null)]
     end
-    
+
     defp reference_name(%Reference{name: nil}, table, column),
       do: quote_name("#{table.name}_#{column}_fkey")
     defp reference_name(%Reference{name: name}, _table, _column),
@@ -482,7 +482,7 @@ if Code.ensure_loaded?(Snappyex) do
       do: "CONSTRAINT #{reference_name(ref, table, name)} REFERENCES " <>
           "#{quote_table(table.prefix, ref.table)}(#{quote_name(ref.column)})" <>
           reference_on_delete(ref.on_delete) <> reference_on_update(ref.on_update)
-    
+
     defp column_type({:array, type}, opts),
       do: column_type(type, opts) <> "[]"
     defp column_type(type, opts) do
@@ -503,7 +503,7 @@ if Code.ensure_loaded?(Snappyex) do
     defp reference_on_delete(_), do: ""
 
     defp reference_on_update(_), do: ""
-    
+
     defp default_expr({:ok, nil}, _type),
       do: "DEFAULT NULL"
     defp default_expr({:ok, literal}, _type) when is_binary(literal),
@@ -536,7 +536,7 @@ if Code.ensure_loaded?(Snappyex) do
     defp escape_string(value) when is_binary(value) do
       :binary.replace(value, "'", "''", [:global])
     end
- 
+
     defp error!(nil, message) do
       raise ArgumentError, message
     end
@@ -544,7 +544,7 @@ if Code.ensure_loaded?(Snappyex) do
       raise Ecto.QueryError, query: query, message: message
     end
 
-    defp ecto_to_db(:id),         do: "BIGINT"    
+    defp ecto_to_db(:id),         do: "BIGINT"
     defp ecto_to_db(:binary_id),  do: "VARCHAR(36)"
     defp ecto_to_db(:string),     do: "VARCHAR"
     defp ecto_to_db(:naive_datetime),   do: "TIMESTAMP"
