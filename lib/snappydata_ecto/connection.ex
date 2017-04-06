@@ -46,6 +46,16 @@ if Code.ensure_loaded?(Snappyex) do
     alias Ecto.Query
     alias Ecto.Query.{BooleanExpr, JoinExpr, QueryExpr}
 
+    binary_ops =
+      [==: " = ", !=: " != ", <=: " <= ", >=: " >= ", <: " < ", >: " > ",
+       and: " AND ", or: " OR ", ilike: " ILIKE ", like: " LIKE "]
+
+    @binary_ops Keyword.keys(binary_ops)
+
+    Enum.map(binary_ops, fn {op, str} ->
+      defp handle_call(unquote(op), 2), do: {:binary_op, unquote(str)}
+    end)
+
     def insert(prefix, table, header, rows, _on_conflict, returning) do
       prefix = unless prefix do
         "APP"
@@ -133,8 +143,7 @@ if Code.ensure_loaded?(Snappyex) do
       Enum.map_join(joins, " ", fn
         %JoinExpr{on: %QueryExpr{expr: expr}, qual: qual, ix: ix, source: source} ->
           {join, name} = get_source(query, sources, ix, source)
-          qual = join_qual(qual)
-          qual <> " " <> join <> " AS " <> name <> " ON " <> expr(expr, sources, query)
+          [join_qual(qual), join, " AS " <> name <> " ON " | expr(expr, sources, query)]
       end)
     end
 
@@ -257,6 +266,22 @@ if Code.ensure_loaded?(Snappyex) do
     defp index_expr(literal),
       do: quote_name(literal)
 
+    defp expr({fun, _, args}, sources, query) when is_atom(fun) and is_list(args) do
+      {modifier, args} =
+        case args do
+          [rest, :distinct] -> {"DISTINCT ", [rest]}
+          _ -> {[], args}
+        end
+
+      case handle_call(fun, length(args)) do
+        {:binary_op, op} ->
+          [left, right] = args
+          [op_to_binary(left, sources, query), op | op_to_binary(right, sources, query)]
+        {:fun, fun} ->
+          [fun, ?(, modifier, intersperse_map(args, ", ", &expr(&1, sources, query)), ?)]
+      end
+    end
+
     defp expr({{:., _, [{:&, _, [idx]}, field]}, _, []}, sources, _query) when is_atom(field) do
       {_, name, _} = elem(sources, idx)
       "#{name}.#{field}"
@@ -341,6 +366,14 @@ if Code.ensure_loaded?(Snappyex) do
       String.Chars.Float.to_string(literal) <> "::float"
     end
 
+    defp op_to_binary({op, _, [_, _]} = expr, sources, query) when op in @binary_ops do
+      paren_expr(expr, sources, query)
+    end
+
+    defp op_to_binary(expr, sources, query) do
+      expr(expr, sources, query)
+    end
+
     defp order_by_expr({dir, expr}, sources, query) do
       str = expr(expr, sources, query)
       case dir do
@@ -379,6 +412,14 @@ if Code.ensure_loaded?(Snappyex) do
       end
       name
     end
+
+    defp intersperse_map(list, separator, mapper, acc \\ [])
+    defp intersperse_map([], _separator, _mapper, acc),
+      do: acc
+    defp intersperse_map([elem], _separator, mapper, acc),
+      do: [acc | mapper.(elem)]
+    defp intersperse_map([elem | rest], separator, mapper, acc),
+      do: intersperse_map(rest, separator, mapper, [acc, mapper.(elem), separator])
 
     defp options_expr(nil),
       do: ""
