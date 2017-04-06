@@ -154,13 +154,13 @@ defmodule Snappydata.Ecto.Test do
 
   test "limit and offset" do
     query = Schema |> limit([r], 3) |> select([], true) |> normalize
-    assert SQL.all(query) == ~s{SELECT TRUE FROM "schema" AS s0 LIMIT 3}
+    assert SQL.all(query) == ~s{SELECT TRUE FROM SCHEMA AS s0 LIMIT 3}
 
     query = Schema |> offset([r], 5) |> select([], true) |> normalize
-    assert SQL.all(query) == ~s{SELECT TRUE FROM "schema" AS s0 OFFSET 5}
+    assert SQL.all(query) == ~s{SELECT TRUE FROM SCHEMA AS s0 OFFSET 5}
 
     query = Schema |> offset([r], 5) |> limit([r], 3) |> select([], true) |> normalize
-    assert SQL.all(query) == ~s{SELECT TRUE FROM "schema" AS s0 LIMIT 3 OFFSET 5}
+    assert SQL.all(query) == ~s{SELECT TRUE FROM SCHEMA AS s0 LIMIT 3 OFFSET 5}
   end
 
   test "lock" do
@@ -297,7 +297,7 @@ defmodule Snappydata.Ecto.Test do
 
   test "or_having" do
     query = Schema |> or_having([p], p.x == p.x) |> select([], true) |> normalize
-    assert SQL.all(query) == ~s{SELECT TRUE FROM "schema" AS s0 HAVING (s0."x" = s0."x")}
+    assert SQL.all(query) == ~s{SELECT TRUE FROM SCHEMA AS s0 HAVING (s0.x = s0.x) OR (s0.y = s0.y)}
 
     query = Schema |> or_having([p], p.x == p.x) |> or_having([p], p.y == p.y) |> select([], true) |> normalize
     assert SQL.all(query) == ~s{SELECT TRUE FROM "schema" AS s0 HAVING (s0."x" = s0."x") OR (s0."y" = s0."y")}

@@ -143,10 +143,7 @@ if Code.ensure_loaded?(Snappyex) do
           [expr(value, sources, query), " AS " | quote_name(key)]
         value ->
           # repeated extract TODO
-          {:&, _, args} = value
-          [idx, fields, _counter] = args
-          {_, name, schema} = elem(sources, idx)
-          Enum.map_join(fields, ", ", &"#{name}.#{&1}")
+          expr(value, sources, query)
       end)
     end
 
@@ -299,7 +296,7 @@ if Code.ensure_loaded?(Snappyex) do
           "Please specify a schema or specify exactly which fields from " <>
           "#{inspect name} you desire")
       end
-      intersperse_map(fields, ", ", &[name, ?. | quote_name(&1)])
+      Enum.map_join(fields, ", ", &"#{name}.#{&1}")
     end
 
     defp expr({:in, _, [_left, []]}, _sources, _query) do
