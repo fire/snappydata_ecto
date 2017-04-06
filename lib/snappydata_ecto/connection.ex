@@ -79,8 +79,7 @@ if Code.ensure_loaded?(Snappyex) do
           "VALUES " <> insert_all(rows, 1, "")
         end
 
-      assemble(["INSERT INTO #{quote_table(prefix, table)}", "",
-                values])
+      IO.iodata_to_binary(["INSERT INTO ", quote_table(prefix, table), values])
     end
 
     defp on_conflict({:raise, _, []}, _header) do
@@ -118,15 +117,15 @@ if Code.ensure_loaded?(Snappyex) do
 
     def all(query) do
       sources        = create_names(query)
-      distinct_exprs = distinct_exprs(query, sources)
+      {select_distinct, order_by_distinct} = distinct(query.distinct, sources, query)
 
       from     = from(query, sources)
-      select   = select(query, distinct_exprs, sources)
+      select   = select(query, select_distinct, sources)
       join     = join(query, sources)
       where    = where(query, sources)
       group_by = group_by(query, sources)
       having   = having(query, sources)
-      order_by = order_by(query, distinct_exprs, sources)
+      order_by = order_by(query, order_by_distinct, sources)
       limit    = limit(query, sources)
       offset   = offset(query, sources)
       lock     = lock(query.lock)
@@ -141,9 +140,19 @@ if Code.ensure_loaded?(Snappyex) do
       [" FROM ", from, " AS " | name]
     end
 
-    defp select(%Query{select: %{fields: fields}, distinct: distinct} = query,
-                distinct_exprs, sources) do
-      ["SELECT", distinct(distinct, distinct_exprs), ?\s | select_fields(fields, sources, query)]
+    defp select(%Query{select: %{fields: fields}} = query, select_distinct, sources) do
+      ["SELECT", select_distinct, ?\s | select_fields(fields, sources, query)]
+    end
+
+    defp select_fields([], _sources, _query),
+      do: "TRUE"
+    defp select_fields(fields, sources, query) do
+      intersperse_map(fields, ", ", fn
+        {key, value} ->
+          [expr(value, sources, query), " AS " | quote_name(key)]
+        value ->
+          expr(value, sources, query)
+      end)
     end
 
     defp join(%Query{joins: []}, _sources), do: []
@@ -151,7 +160,7 @@ if Code.ensure_loaded?(Snappyex) do
       Enum.map_join(joins, " ", fn
         %JoinExpr{on: %QueryExpr{expr: expr}, qual: qual, ix: ix, source: source} ->
           {join, name} = get_source(query, sources, ix, source)
-          [join_qual(qual), join, " AS " <> name <> " ON " | expr(expr, sources, query)]
+          [join_qual(qual), join, " AS ", name, " ON " | expr(expr, sources, query)]
       end)
     end
 
@@ -183,9 +192,9 @@ if Code.ensure_loaded?(Snappyex) do
         {_, ""} ->
           []
         {"", _} ->
-          "ORDER BY " <> exprs
+          " ORDER BY " <> exprs
         {_, _}  ->
-          "ORDER BY " <> distinct_exprs <> ", " <> exprs
+          " ORDER BY " <> distinct_exprs <> ", " <> exprs
       end
     end
 
@@ -195,16 +204,16 @@ if Code.ensure_loaded?(Snappyex) do
 
    defp limit(%Query{limit: nil}, _sources), do: []
     defp limit(%Query{limit: %QueryExpr{expr: expr}} = query, sources) do
-      "LIMIT " <> expr(expr, sources, query)
+      " LIMIT " <> expr(expr, sources, query)
     end
 
     defp offset(%Query{offset: nil}, _sources), do: []
     defp offset(%Query{offset: %QueryExpr{expr: expr}} = query, sources) do
-      "OFFSET " <> expr(expr, sources, query)
+      " OFFSET " <> expr(expr, sources, query)
     end
 
     defp lock(nil), do: []
-    defp lock(lock_clause), do: lock_clause
+    defp lock(lock_clause), do: [?\s | lock_clause]
 
     defp boolean(_name, [], _sources, _query), do: []
     defp boolean(name, [%{expr: expr, op: op} | query_exprs], sources, query) do
@@ -222,12 +231,6 @@ if Code.ensure_loaded?(Snappyex) do
 
     defp paren_expr(expr, sources, query) do
       [?(, expr(expr, sources, query), ?)]
-    end
-
-    defp assemble(list) do
-      list
-      |> List.flatten
-      |> Enum.join(" ")
     end
 
     defp create_names(%{prefix: prefix, sources: sources}) do
@@ -252,22 +255,27 @@ if Code.ensure_loaded?(Snappyex) do
       []
     end
 
-    defp distinct(nil, _sources), do: ""
-    defp distinct(%QueryExpr{expr: true}, _exprs),  do: "DISTINCT "
-    defp distinct(%QueryExpr{expr: false}, _exprs), do: ""
-    defp distinct(_query, exprs), do: "DISTINCT ON (" <> exprs <> ") "
+    defp distinct(nil, _, _), do: {[], []}
+    defp distinct(%QueryExpr{expr: []}, _, _), do: {[], []}
+    defp distinct(%QueryExpr{expr: true}, _, _), do: {" DISTINCT", []}
+    defp distinct(%QueryExpr{expr: false}, _, _), do: {[], []}
+    defp distinct(%QueryExpr{expr: exprs}, sources, query) do
+      {[" DISTINCT ON (",
+        intersperse_map(exprs, ", ", fn {_, expr} -> expr(expr, sources, query) end), ?)],
+        exprs}
+    end
 
     defp select_fields([], _sources, _query),
       do: "TRUE"
     defp select_fields(fields, sources, query),
       do: Enum.map_join(fields, ", ", &expr(&1, sources, query))
 
-    defp join_qual(:inner), do: "INNER JOIN"
-    defp join_qual(:inner_lateral), do: "INNER JOIN LATERAL"
-    defp join_qual(:left),  do: "LEFT OUTER JOIN"
-    defp join_qual(:left_lateral),  do: "LEFT OUTER JOIN LATERAL"
-    defp join_qual(:right), do: "RIGHT OUTER JOIN"
-    defp join_qual(:full),  do: "FULL OUTER JOIN"
+    defp join_qual(:inner), do: " INNER JOIN "
+    defp join_qual(:inner_lateral), do: " INNER JOIN LATERAL "
+    defp join_qual(:left),  do: "LEFT OUTER JOIN "
+    defp join_qual(:left_lateral),  do: " LEFT OUTER JOIN LATERAL "
+    defp join_qual(:right), do: " RIGHT OUTER JOIN "
+    defp join_qual(:full),  do: " FULL OUTER JOIN "
 
     defp index_expr(literal) when is_binary(literal),
       do: literal
@@ -456,22 +464,18 @@ if Code.ensure_loaded?(Snappyex) do
     end
 
     def execute_ddl({:create_if_not_exists, %Index{}=index}) do
-      assemble(["",
-                "",
-                execute_ddl({:create, index}) <> ";",
-                ""])
+     [execute_ddl({:create, index}), ";"]
     end
 
     def execute_ddl({:create, %Index{}=index}) do
       fields = Enum.map_join(index.columns, ", ", &index_expr/1)
 
-      assemble(["CREATE",
-                if_do(index.unique, "UNIQUE"),
-                "INDEX",
+      [["CREATE ", if_do(index.unique, "UNIQUE"),
+                " INDEX ",
                 quote_name(index.name),
-                "ON",
+                " ON ",
                 quote_table(index.prefix, index.table),
-                "(#{fields})"])
+                "(#{fields})"]]
     end
 
     def execute_ddl({:create, %Constraint{}=constraint}) do
@@ -498,18 +502,18 @@ if Code.ensure_loaded?(Snappyex) do
     end
 
     defp column_definitions(table, columns) do
-      Enum.map_join(columns, ", ", &column_definition(table, &1))
+      intersperse_map(columns, ", ", &column_definition(table, &1))
     end
 
     defp column_definition(table, {:add, name, %Reference{} = ref, opts}) do
-      assemble([
-        quote_name(name), reference_column_type(ref.type, opts),
+      [[
+        quote_name(name), ?\s, reference_column_type(ref.type, opts),
         column_options(ref.type, opts), reference_expr(ref, table, name)
-      ])
+      ]]
     end
 
     defp column_definition(_table, {:add, name, type, opts}) do
-      assemble([quote_name(name), column_type(type, opts), column_options(type, opts)])
+      [[quote_name(name), ?\s, column_type(type, opts), column_options(type, opts)]]
     end
 
     defp reference_column_type(:serial, _opts), do: "BIGINT"
@@ -528,9 +532,8 @@ if Code.ensure_loaded?(Snappyex) do
 
     # Foreign key definition
     defp reference_expr(%Reference{} = ref, table, name),
-      do: "CONSTRAINT #{reference_name(ref, table, name)} REFERENCES " <>
-          "#{quote_table(table.prefix, ref.table)}(#{quote_name(ref.column)})" <>
-          reference_on_delete(ref.on_delete) <> reference_on_update(ref.on_update)
+      do: [" CONSTRAINT ", reference_name(ref, table, name), ?\s, "REFERENCES ", 
+          quote_table(table.prefix, ref.table), ?(, quote_name(ref.column), ?), reference_on_delete(ref.on_delete), reference_on_update(ref.on_update)]
 
     defp column_type({:array, type}, opts),
       do: column_type(type, opts) <> "[]"
