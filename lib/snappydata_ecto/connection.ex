@@ -292,8 +292,6 @@ if Code.ensure_loaded?(Snappyex) do
     end
 
     defp expr({:&, _, [idx, fields, _counter]}, sources, query) do
-      IO.inspect "expr: " <> inspect sources
-      IO.inspect "expr: " <> inspect idx
       {source, name, schema} = elem(sources, idx)
       if is_nil(schema) and is_nil(fields) do
         error!(query, "SnappyData requires a schema module when using selector " <>
