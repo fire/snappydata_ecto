@@ -146,7 +146,7 @@ if Code.ensure_loaded?(Snappyex) do
       Enum.map_join(joins, " ", fn
         %JoinExpr{on: %QueryExpr{expr: expr}, qual: qual, ix: ix, source: source} ->
           {join, name} = get_source(query, sources, ix, source)
-          [join_qual(qual), join, " AS ", name, " ON " | expr(expr, sources, query)]
+          [join_qual(qual), " ", join, " AS ", name, " ON " | expr(expr, sources, query)]
       end)
     end
 
@@ -251,12 +251,12 @@ if Code.ensure_loaded?(Snappyex) do
         exprs}
     end
 
-    defp join_qual(:inner), do: "INNER JOIN "
-    defp join_qual(:inner_lateral), do: "INNER JOIN LATERAL "
-    defp join_qual(:left),  do: "LEFT OUTER JOIN "
-    defp join_qual(:left_lateral),  do: "LEFT OUTER JOIN LATERAL "
-    defp join_qual(:right), do: "RIGHT OUTER JOIN "
-    defp join_qual(:full),  do: "FULL OUTER JOIN "
+    defp join_qual(:inner), do: "INNER JOIN"
+    defp join_qual(:inner_lateral), do: "INNER JOIN LATERAL"
+    defp join_qual(:left),  do: "LEFT OUTER JOIN"
+    defp join_qual(:left_lateral),  do: "LEFT OUTER JOIN LATERAL"
+    defp join_qual(:right), do: "RIGHT OUTER JOIN"
+    defp join_qual(:full),  do: "FULL OUTER JOIN"
 
     defp index_expr(literal) when is_binary(literal), do: literal
     defp index_expr(literal), do: quote_name(literal)
