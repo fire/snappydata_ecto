@@ -194,7 +194,7 @@ if Code.ensure_loaded?(Snappyex) do
     end
 
     defp having(%Query{havings: havings} = query, sources) do
-      boolean("HAVING", havings, sources, query)
+      boolean(" HAVING ", havings, sources, query)
     end
 
    defp limit(%Query{limit: nil}, _sources), do: []

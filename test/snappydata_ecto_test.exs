@@ -165,7 +165,7 @@ defmodule Snappydata.Ecto.Test do
 
   test "lock" do
     query = Schema |> lock("FOR SHARE NOWAIT") |> select([], true) |> normalize
-    assert SQL.all(query) == ~s{SELECT TRUE FROM "schema" AS s0 FOR SHARE NOWAIT}
+    assert SQL.all(query) == ~s{SELECT TRUE FROM SCHEMA AS s0 FOR SHARE NOWAIT}
   end
 
   test "string escape" do
@@ -223,7 +223,7 @@ defmodule Snappydata.Ecto.Test do
 
   test "literals" do
     query = "schema" |> where(foo: true) |> select([], true) |> normalize
-    assert SQL.all(query) == ~s{SELECT TRUE FROM "schema" AS s0 WHERE (s0."foo" = TRUE)}
+    assert SQL.all(query) == ~s{SELECT TRUE FROM SCHEMA AS s0 WHERE (s0.foo = TRUE)}
 
     query = "schema" |> where(foo: false) |> select([], true) |> normalize
     assert SQL.all(query) == ~s{SELECT TRUE FROM "schema" AS s0 WHERE (s0."foo" = FALSE)}
@@ -289,10 +289,10 @@ defmodule Snappydata.Ecto.Test do
 
   test "having" do
     query = Schema |> having([p], p.x == p.x) |> select([], true) |> normalize
-    assert SQL.all(query) == ~s{SELECT TRUE FROM "schema" AS s0 HAVING (s0."x" = s0."x")}
+    assert SQL.all(query) == ~s{SELECT TRUE FROM SCHEMA AS s0 HAVING (s0.x = s0.x)}
 
     query = Schema |> having([p], p.x == p.x) |> having([p], p.y == p.y) |> select([], true) |> normalize
-    assert SQL.all(query) == ~s{SELECT TRUE FROM "schema" AS s0 HAVING (s0."x" = s0."x") AND (s0."y" = s0."y")}
+    assert SQL.all(query) == ~s{SELECT TRUE FROM SCHEMA AS s0 HAVING (s0.x = s0.x) AND (s0.y = s0.y)}
   end
 
   test "or_having" do
@@ -480,13 +480,13 @@ defmodule Snappydata.Ecto.Test do
   test "join with nothing bound" do
     query = Schema |> join(:inner, [], q in Schema2, q.z == q.z) |> select([], true) |> normalize
     assert SQL.all(query) ==
-           ~s{SELECT TRUE FROM "schema" AS s0 INNER JOIN "schema2" AS s1 ON s1."z" = s1."z"}
+      ~s{SELECT TRUE FROM SCHEMA AS s0 INNER JOIN SCHEMA2 AS s1 ON s1.z = s1.z}
   end
 
   test "join without schema" do
     query = "posts" |> join(:inner, [p], q in "comments", p.x == q.z) |> select([], true) |> normalize
     assert SQL.all(query) ==
-           ~s{SELECT TRUE FROM "posts" AS p0 INNER JOIN "comments" AS c1 ON p0."x" = c1."z"}
+      ~s{SELECT TRUE FROM POSTS AS p0 INNER JOIN COMMENTS AS c1 ON p0.x = c1.z}
   end
 
   test "join with subquery" do
