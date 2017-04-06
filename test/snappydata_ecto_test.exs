@@ -69,7 +69,7 @@ defmodule Snappydata.Ecto.Test do
 
   test "from with subquery" do
     query = subquery("posts" |> select([r], %{x: r.x, y: r.y})) |> select([r], r.x) |> normalize
-    assert SQL.all(query) == ~s{SELECT s0."x" FROM (SELECT p0."x" AS "x", p0."y" AS "y" FROM "posts" AS p0) AS s0}
+    assert SQL.all(query) == ~s{SELECT s0.x FROM (SELECT p0.x, p0.y FROM POSTS AS p0) AS s0}
 
     query = subquery("posts" |> select([r], %{x: r.x, z: r.y})) |> select([r], r) |> normalize
     assert SQL.all(query) == ~s{SELECT s0."x", s0."z" FROM (SELECT p0."x" AS "x", p0."y" AS "z" FROM "posts" AS p0) AS s0}
@@ -127,7 +127,7 @@ defmodule Snappydata.Ecto.Test do
 
   test "where" do
     query = Schema |> where([r], r.x == 42) |> where([r], r.y != 43) |> select([r], r.x) |> normalize
-    assert SQL.all(query) == ~s{SELECT s0."x" FROM "schema" AS s0 WHERE (s0."x" = 42) AND (s0."y" != 43)}
+    assert SQL.all(query) == ~s{SELECT s0.x FROM SCHEMA AS s0 WHERE (s0.x = 42) AND (s0.y != 43)}
   end
 
   test "or_where" do
@@ -468,13 +468,12 @@ defmodule Snappydata.Ecto.Test do
   test "join" do
     query = Schema |> join(:inner, [p], q in Schema2, p.x == q.z) |> select([], true) |> normalize
     assert SQL.all(query) ==
-           ~s{SELECT TRUE FROM "schema" AS s0 INNER JOIN "schema2" AS s1 ON s0."x" = s1."z"}
+      ~s{SELECT TRUE FROM SCHEMA AS s0 INNER JOIN SCHEMA2 AS s1 ON s0.x = s1.z}
 
     query = Schema |> join(:inner, [p], q in Schema2, p.x == q.z)
                   |> join(:inner, [], Schema, true) |> select([], true) |> normalize
     assert SQL.all(query) ==
-           ~s{SELECT TRUE FROM "schema" AS s0 INNER JOIN "schema2" AS s1 ON s0."x" = s1."z" } <>
-           ~s{INNER JOIN "schema" AS s2 ON TRUE}
+      ~s{SELECT TRUE FROM SCHEMA AS s0 INNER JOIN SCHEMA2 AS s1 ON s0.x = s1.z } <> ~s{ INNER JOIN SCHEMA AS s2 ON TRUE}
   end
 
   test "join with nothing bound" do
@@ -535,7 +534,7 @@ defmodule Snappydata.Ecto.Test do
     inner = Ecto.Queryable.to_query(Schema2)
     query = from(p in Schema, left_join: c in ^inner, select: {p.id, c.id}) |> normalize()
     assert SQL.all(query) ==
-           "SELECT s0.\"id\", s1.\"id\" FROM \"schema\" AS s0 LEFT OUTER JOIN \"schema2\" AS s1 ON TRUE"
+      "SELECT s0.id, s1.id FROM SCHEMA AS s0 LEFT OUTER JOIN SCHEMA2 AS s1 ON TRUE"
   end
 
   # test "lateral join with fragment" do
@@ -561,7 +560,7 @@ defmodule Snappydata.Ecto.Test do
     query = from(p in query, join: c in Schema2, on: true, select: {p.id, c.id})
     query = normalize(query)
     assert SQL.all(query) ==
-           "SELECT s0.\"id\", s2.\"id\" FROM \"schema\" AS s0 INNER JOIN \"schema2\" AS s1 ON TRUE INNER JOIN \"schema2\" AS s2 ON TRUE"
+      "SELECT s0.id, s2.id FROM SCHEMA AS s0 INNER JOIN SCHEMA2 AS s1 ON TRUE INNER JOIN SCHEMA2 AS s2 ON TRUE"
   end
 
   ## Associations

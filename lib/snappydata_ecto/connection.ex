@@ -128,7 +128,7 @@ if Code.ensure_loaded?(Snappyex) do
 
     defp from(%{from: from} = query, sources) do
       {from, name} = get_source(query, sources, 0, from)
-      [" FROM ", from, " AS " | name]
+      [" FROM ", from, " AS " | [name, " "]]
     end
 
     defp select(%Query{select: %{fields: fields}} = query, select_distinct, sources) do
@@ -140,9 +140,8 @@ if Code.ensure_loaded?(Snappyex) do
     defp select_fields(fields, sources, query) do
       intersperse_map(fields, ", ", fn
         {key, value} ->
-          [expr(value, sources, query), " AS " | quote_name(key)]
+          [expr(value, sources, query), " AS ", key, " "]
         value ->
-          # repeated extract TODO
           expr(value, sources, query)
       end)
     end
@@ -257,12 +256,12 @@ if Code.ensure_loaded?(Snappyex) do
         exprs}
     end
 
-    defp join_qual(:inner), do: " INNER JOIN "
-    defp join_qual(:inner_lateral), do: " INNER JOIN LATERAL "
+    defp join_qual(:inner), do: "INNER JOIN "
+    defp join_qual(:inner_lateral), do: "INNER JOIN LATERAL "
     defp join_qual(:left),  do: "LEFT OUTER JOIN "
-    defp join_qual(:left_lateral),  do: " LEFT OUTER JOIN LATERAL "
-    defp join_qual(:right), do: " RIGHT OUTER JOIN "
-    defp join_qual(:full),  do: " FULL OUTER JOIN "
+    defp join_qual(:left_lateral),  do: "LEFT OUTER JOIN LATERAL "
+    defp join_qual(:right), do: "RIGHT OUTER JOIN "
+    defp join_qual(:full),  do: "FULL OUTER JOIN "
 
     defp index_expr(literal) when is_binary(literal), do: literal
     defp index_expr(literal), do: quote_name(literal)
@@ -296,7 +295,7 @@ if Code.ensure_loaded?(Snappyex) do
           "Please specify a schema or specify exactly which fields from " <>
           "#{inspect name} you desire")
       end
-      Enum.map_join(fields, ", ", &"#{name}.#{&1}")
+      Enum.map_join(fields, ", ", &"#{name}.#{&1} ")
     end
 
     defp expr({:in, _, [_left, []]}, _sources, _query) do
@@ -455,8 +454,8 @@ if Code.ensure_loaded?(Snappyex) do
     def execute_ddl({:create, %Index{}=index}) do
       fields = Enum.map_join(index.columns, ", ", &index_expr/1)
 
-      [["CREATE ", if_do(index.unique, " UNIQUE"),
-                " INDEX ",
+      [["CREATE ", if_do(index.unique, "UNIQUE "),
+                "INDEX ",
                 quote_name(index.name),
                 " ON ",
                 quote_table(index.prefix, index.table),
