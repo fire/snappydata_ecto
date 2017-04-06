@@ -24,6 +24,9 @@ if Code.ensure_loaded?(Snappyex) do
 
     ## Query
 
+    alias Ecto.Query
+    alias Ecto.Query.{BooleanExpr, JoinExpr, QueryExpr}
+
     binary_ops =
       [==: " = ", !=: " != ", <=: " <= ", >=: " >= ", <: " < ", >: " > ",
        and: " AND ", or: " OR ", ilike: " ILIKE ", like: " LIKE "]
@@ -33,6 +36,8 @@ if Code.ensure_loaded?(Snappyex) do
     Enum.map(binary_ops, fn {op, str} ->
       defp handle_call(unquote(op), 2), do: {:binary_op, unquote(str)}
     end)
+
+    defp handle_call(fun, _arity), do: {:fun, Atom.to_string(fun)}
 
     def prepare_execute(conn, name, sql, params, opts) do
       query = %Snappyex.Query{name: name, statement: sql}
@@ -50,21 +55,6 @@ if Code.ensure_loaded?(Snappyex) do
     def execute(conn, %{} = query, params, opts) do
       DBConnection.execute(conn, query, params, opts)
     end
-
-    ## Query
-
-    alias Ecto.Query
-    alias Ecto.Query.{BooleanExpr, JoinExpr, QueryExpr}
-
-    binary_ops =
-      [==: " = ", !=: " != ", <=: " <= ", >=: " >= ", <: " < ", >: " > ",
-       and: " AND ", or: " OR ", ilike: " ILIKE ", like: " LIKE "]
-
-    @binary_ops Keyword.keys(binary_ops)
-
-    Enum.map(binary_ops, fn {op, str} ->
-      defp handle_call(unquote(op), 2), do: {:binary_op, unquote(str)}
-    end)
 
     def insert(prefix, table, header, rows, _on_conflict, returning) do
       prefix = unless prefix do
@@ -116,7 +106,7 @@ if Code.ensure_loaded?(Snappyex) do
     end
 
     def all(query) do
-      sources        = create_names(query)
+      sources = create_names(query)
       {select_distinct, order_by_distinct} = distinct(query.distinct, sources, query)
 
       from     = from(query, sources)
@@ -133,6 +123,7 @@ if Code.ensure_loaded?(Snappyex) do
       IO.iodata_to_binary([select, from, join, where, group_by, having, order_by, limit, offset, lock])
     end
 
+    # Remove
     defp distinct_exprs(_, _), do: ""
 
     defp from(%{from: from} = query, sources) do
@@ -151,7 +142,11 @@ if Code.ensure_loaded?(Snappyex) do
         {key, value} ->
           [expr(value, sources, query), " AS " | quote_name(key)]
         value ->
-          expr(value, sources, query)
+          # repeated extract TODO
+          {:&, _, args} = value
+          [idx, fields, _counter] = args
+          {_, name, schema} = elem(sources, idx)
+          Enum.map_join(fields, ", ", &"#{name}.#{&1}")
       end)
     end
 
@@ -265,11 +260,6 @@ if Code.ensure_loaded?(Snappyex) do
         exprs}
     end
 
-    defp select_fields([], _sources, _query),
-      do: "TRUE"
-    defp select_fields(fields, sources, query),
-      do: Enum.map_join(fields, ", ", &expr(&1, sources, query))
-
     defp join_qual(:inner), do: " INNER JOIN "
     defp join_qual(:inner_lateral), do: " INNER JOIN LATERAL "
     defp join_qual(:left),  do: "LEFT OUTER JOIN "
@@ -277,10 +267,8 @@ if Code.ensure_loaded?(Snappyex) do
     defp join_qual(:right), do: " RIGHT OUTER JOIN "
     defp join_qual(:full),  do: " FULL OUTER JOIN "
 
-    defp index_expr(literal) when is_binary(literal),
-      do: literal
-    defp index_expr(literal),
-      do: quote_name(literal)
+    defp index_expr(literal) when is_binary(literal), do: literal
+    defp index_expr(literal), do: quote_name(literal)
 
     defp expr({fun, _, args}, sources, query) when is_atom(fun) and is_list(args) do
       {modifier, args} =
@@ -294,7 +282,7 @@ if Code.ensure_loaded?(Snappyex) do
           [left, right] = args
           [op_to_binary(left, sources, query), op | op_to_binary(right, sources, query)]
         {:fun, fun} ->
-          [fun, ?(, modifier, intersperse_map(args, ", ", &expr(&1, sources, query)), ?)]
+          [fun, ?(, modifier, intersperse_map(args, ", ", fn x -> expr(x, sources, query) end), ?)]
       end
     end
 
@@ -304,14 +292,16 @@ if Code.ensure_loaded?(Snappyex) do
     end
 
     defp expr({:&, _, [idx, fields, _counter]}, sources, query) do
-      {_, name, schema} = elem(sources, idx)
+      IO.inspect "expr: " <> inspect sources
+      IO.inspect "expr: " <> inspect idx
+      {source, name, schema} = elem(sources, idx)
       if is_nil(schema) and is_nil(fields) do
         error!(query, "SnappyData requires a schema module when using selector " <>
           "#{inspect name} but none was given. " <>
           "Please specify a schema or specify exactly which fields from " <>
           "#{inspect name} you desire")
       end
-      Enum.map_join(fields, ", ", &"#{name}.#{quote_name(&1)}")
+      intersperse_map(fields, ", ", &[name, ?. | quote_name(&1)])
     end
 
     defp expr({:in, _, [_left, []]}, _sources, _query) do
@@ -352,9 +342,9 @@ if Code.ensure_loaded?(Snappyex) do
 
     defp handle_call(fun, _arity), do: {:fun, Atom.to_string(fun)}
 
-    defp expr(list, sources, query) when is_list(list) do
-      "ARRAY[" <> Enum.map_join(list, ",", &expr(&1, sources, query)) <> "]"
-    end
+#    defp expr(list, sources, query) when is_list(list) do
+#      "ARRAY[" <> Enum.map_join(list, ",", &expr(&1, sources, query)) <> "]"
+#    end
 
     defp expr(%Decimal{} = decimal, _sources, _query) do
       Decimal.to_string(decimal, :normal)
@@ -470,7 +460,7 @@ if Code.ensure_loaded?(Snappyex) do
     def execute_ddl({:create, %Index{}=index}) do
       fields = Enum.map_join(index.columns, ", ", &index_expr/1)
 
-      [["CREATE ", if_do(index.unique, "UNIQUE"),
+      [["CREATE ", if_do(index.unique, " UNIQUE"),
                 " INDEX ",
                 quote_name(index.name),
                 " ON ",
