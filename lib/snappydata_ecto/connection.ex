@@ -138,12 +138,7 @@ if Code.ensure_loaded?(Snappyex) do
     defp select_fields([], _sources, _query),
       do: "TRUE"
     defp select_fields(fields, sources, query) do
-      intersperse_map(fields, ", ", fn
-        {key, value} ->
-          [expr(value, sources, query), " AS ", key, " "]
-        value ->
-          expr(value, sources, query)
-      end)
+      Enum.map_join(fields, ", ", fn field -> expr(field, sources, query) end)
     end
 
     defp join(%Query{joins: []}, _sources), do: []
@@ -156,7 +151,7 @@ if Code.ensure_loaded?(Snappyex) do
     end
 
     defp where(%Query{wheres: wheres} = query, sources) do
-      boolean(" WHERE ", wheres, sources, query)
+      boolean("WHERE ", wheres, sources, query)
     end
 
     defp group_by(%Query{group_bys: group_bys} = query, sources) do
