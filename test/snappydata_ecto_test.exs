@@ -587,19 +587,19 @@ defmodule Snappydata.Ecto.Test do
 
   test "insert" do
     query = SQL.insert(nil, "schema", [:x, :y], [[:x, :y]], {:raise, [], []}, [:id])
-    assert query == ~s{INSERT INTO "schema" ("x","y") VALUES ($1,$2) RETURNING "id"}
+    assert query == ~s{INSERT INTO APP.SCHEMA(X,Y) VALUES (?,?)}
 
     query = SQL.insert(nil, "schema", [:x, :y], [[:x, :y], [nil, :z]], {:raise, [], []}, [:id])
-    assert query == ~s{INSERT INTO "schema" ("x","y") VALUES ($1,$2),(DEFAULT,$3) RETURNING "id"}
+    assert query == ~s{INSERT INTO APP.SCHEMA(X,Y) VALUES (?,?),(DEFAULT,?)}
 
     query = SQL.insert(nil, "schema", [], [[]], {:raise, [], []}, [:id])
-    assert query == ~s{INSERT INTO "schema" VALUES (DEFAULT) RETURNING "id"}
+    assert query == ~s{INSERT INTO APP.SCHEMA VALUES (DEFAULT)}
 
     query = SQL.insert(nil, "schema", [], [[]], {:raise, [], []}, [])
-    assert query == ~s{INSERT INTO "schema" VALUES (DEFAULT)}
+    assert query == ~s{INSERT INTO APP.SCHEMA VALUES (DEFAULT)}
 
     query = SQL.insert("prefix", "schema", [], [[]], {:raise, [], []}, [])
-    assert query == ~s{INSERT INTO "prefix"."schema" VALUES (DEFAULT)}
+    assert query == ~s{INSERT INTO PREFIX.SCHEMA VALUES (DEFAULT)}
   end
 
   test "insert with on conflict" do

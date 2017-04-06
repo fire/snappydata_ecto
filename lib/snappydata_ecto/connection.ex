@@ -57,13 +57,15 @@ if Code.ensure_loaded?(Snappyex) do
     end
 
     def insert(prefix, table, header, rows, _on_conflict, returning) do
-      prefix = unless prefix do
+      prefix = if prefix == nil do
         "APP"
+      else
+        prefix
       end
 
       values =
         if header == [] do
-          "VALUES " <> Enum.map_join(rows, ",", fn _ -> "(DEFAULT)" end)
+          " VALUES " <> Enum.map_join(rows, ",", fn _ -> "(DEFAULT)" end)
         else
           "(" <> Enum.map_join(header, ",", &quote_name/1) <> ") " <>
           "VALUES " <> insert_all(rows, 1, "")
