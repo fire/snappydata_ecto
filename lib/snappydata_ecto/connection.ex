@@ -85,7 +85,7 @@ if Code.ensure_loaded?(Snappyex) do
     defp insert_each([nil|t], counter, acc),
       do: insert_each(t, counter, acc <> ",DEFAULT")
     defp insert_each([_|t], counter, acc),
-      do: insert_each(t, counter + 1, acc <> ",$" <> Integer.to_string(counter))
+      do: insert_each(t, counter + 1, acc <> ",?")
     defp insert_each([], counter, "," <> acc),
       do: {counter, acc}
 
