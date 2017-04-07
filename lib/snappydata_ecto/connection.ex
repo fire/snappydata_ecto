@@ -140,7 +140,12 @@ if Code.ensure_loaded?(Snappyex) do
     defp select_fields([], _sources, _query),
       do: "TRUE"
     defp select_fields(fields, sources, query) do
-      Enum.map_join(fields, ", ", fn field -> expr(field, sources, query) end)
+      if([{:&, _, args}] = fields ) do
+        [idx, fields, _counter] = args
+        {_, name, schema} = elem(sources, idx)
+        Enum.map_join(fields, ", ", &"#{name}.#{&1}")
+      end
+      #Enum.map_join(fields, ", ", fn field -> expr(field, sources, query) end)
     end
 
     defp join(%Query{joins: []}, _sources), do: []
@@ -275,7 +280,7 @@ if Code.ensure_loaded?(Snappyex) do
           [left, right] = args
           [op_to_binary(left, sources, query), op | op_to_binary(right, sources, query)]
         {:fun, fun} ->
-          [fun, ?(, modifier, intersperse_map(args, ", ", fn x -> expr(x, sources, query) end), ?)]
+          [?(, modifier, intersperse_map(args, ", ", fn x -> "?" end), ?)]
       end
     end
 
