@@ -52,15 +52,15 @@ defmodule Snappydata.Ecto.Test do
 
   test "from" do
     query = Schema |> select([r], r.x) |> normalize
-    assert SQL.all(query) == ~s{SELECT s0.x FROM SCHEMA AS s0}
+    assert SQL.all(query) == ~s{SELECT s0."x" FROM "schema" AS s0}
   end
 
   test "from without schema" do
     query = "posts" |> select([r], r.x) |> normalize
-    assert SQL.all(query) == ~s{SELECT p0.x FROM POSTS AS p0}
+    assert SQL.all(query) == ~s{SELECT p0."x" FROM "posts" AS p0}
 
     query = "posts" |> select([:x]) |> normalize
-    assert SQL.all(query) == ~s{SELECT p0.x FROM POSTS AS p0}
+    assert SQL.all(query) == ~s{SELECT p0."x" FROM "posts" AS p0}
 
     assert_raise Ecto.QueryError, ~r"SnappyData requires a schema module when using selector \"p0\" but none was given. Please specify a schema or specify exactly which fields from \"p0\" you desire in query:\n\nfrom p in \"posts\",\n  select: p\n", fn ->
       SQL.all from(p in "posts", select: p) |> normalize()
@@ -69,7 +69,7 @@ defmodule Snappydata.Ecto.Test do
 
   test "from with subquery" do
     query = subquery("posts" |> select([r], %{x: r.x, y: r.y})) |> select([r], r.x) |> normalize
-    assert SQL.all(query) == ~s{SELECT s0.x FROM (SELECT p0.x, p0.y FROM POSTS AS p0) AS s0}
+    assert SQL.all(query) == ~s{SELECT s0."x" FROM (SELECT p0."x" AS "x", p0."y" AS "y" FROM "posts" AS p0) AS s0}
 
     query = subquery("posts" |> select([r], %{x: r.x, z: r.y})) |> select([r], r) |> normalize
     assert SQL.all(query) == ~s{SELECT s0."x", s0."z" FROM (SELECT p0."x" AS "x", p0."y" AS "z" FROM "posts" AS p0) AS s0}
@@ -77,10 +77,10 @@ defmodule Snappydata.Ecto.Test do
 
   test "select" do
     query = Schema |> select([r], {r.x, r.y}) |> normalize
-    assert SQL.all(query) == ~s{SELECT s0.x, s0.y FROM SCHEMA AS s0M SCHEMA AS s0}
+    assert SQL.all(query) == ~s{SELECT s0."x", s0."y" FROM "schema" AS s0}
 
     query = Schema |> select([r], [r.x, r.y]) |> normalize
-    assert SQL.all(query) == ~s{SELECT s0.x, s0.y FROM SCHEMA AS s0}
+    assert SQL.all(query) == ~s{SELECT s0."x", s0."y" FROM "schema" AS s0}
 
     query = Schema |> select([r], struct(r, [:x, :y])) |> normalize
     assert SQL.all(query) == ~s{SELECT s0."x", s0."y" FROM "schema" AS s0}
@@ -154,13 +154,13 @@ defmodule Snappydata.Ecto.Test do
 
   test "limit and offset" do
     query = Schema |> limit([r], 3) |> select([], true) |> normalize
-    assert SQL.all(query) == ~s{SELECT TRUE FROM SCHEMA AS s0 LIMIT 3}
+    assert SQL.all(query) == ~s{SELECT TRUE FROM "schema" AS s0 LIMIT 3}
 
     query = Schema |> offset([r], 5) |> select([], true) |> normalize
-    assert SQL.all(query) == ~s{SELECT TRUE FROM SCHEMA AS s0 OFFSET 5}
+    assert SQL.all(query) == ~s{SELECT TRUE FROM "schema" AS s0 OFFSET 5}
 
     query = Schema |> offset([r], 5) |> limit([r], 3) |> select([], true) |> normalize
-    assert SQL.all(query) == ~s{SELECT TRUE FROM SCHEMA AS s0 LIMIT 3 OFFSET 5}
+    assert SQL.all(query) == ~s{SELECT TRUE FROM "schema" AS s0 LIMIT 3 OFFSET 5}
   end
 
   test "lock" do
