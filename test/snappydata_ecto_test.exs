@@ -52,7 +52,7 @@ defmodule Snappydata.Ecto.Test do
 
   test "from" do
     query = Schema |> select([r], r.x) |> normalize
-    assert SQL.all(query) == ~s{SELECT s0.X FROM SCHEMA AS s0}
+    assert SQL.all(query) == ~s{SELECT s0.x FROM SCHEMA AS s0}
   end
 
   test "from without schema" do

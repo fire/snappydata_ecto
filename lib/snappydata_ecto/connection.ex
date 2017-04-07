@@ -148,7 +148,7 @@ if Code.ensure_loaded?(Snappyex) do
       Enum.map_join(joins, " ", fn
         %JoinExpr{on: %QueryExpr{expr: expr}, qual: qual, ix: ix, source: source} ->
           {join, name} = get_source(query, sources, ix, source)
-          [join_qual(qual), " ", join, " AS ", name, " ON " | expr(expr, sources, query)]
+          [" ", join_qual(qual), " ", join, " AS ", name, " ON " | expr(expr, sources, query)]
       end)
     end
 
