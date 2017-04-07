@@ -57,10 +57,10 @@ defmodule Snappydata.Ecto.Test do
 
   test "from without schema" do
     query = "posts" |> select([r], r.x) |> normalize
-    assert SQL.all(query) == ~s{SELECT p0.X FROM POSTS AS p0}
+    assert SQL.all(query) == ~s{SELECT p0.x FROM POSTS AS p0}
 
     query = "posts" |> select([:x]) |> normalize
-    assert SQL.all(query) == ~s{SELECT p0.X FROM POSTS AS p0}
+    assert SQL.all(query) == ~s{SELECT p0.x FROM POSTS AS p0}
 
     assert_raise Ecto.QueryError, ~r"SnappyData requires a schema module when using selector \"p0\" but none was given. Please specify a schema or specify exactly which fields from \"p0\" you desire in query:\n\nfrom p in \"posts\",\n  select: p\n", fn ->
       SQL.all from(p in "posts", select: p) |> normalize()
@@ -77,10 +77,10 @@ defmodule Snappydata.Ecto.Test do
 
   test "select" do
     query = Schema |> select([r], {r.x, r.y}) |> normalize
-    assert SQL.all(query) == ~s{SELECT s0."x", s0."y" FROM "schema" AS s0}
+    assert SQL.all(query) == ~s{SELECT s0.x, s0.y FROM SCHEMA AS s0M SCHEMA AS s0}
 
     query = Schema |> select([r], [r.x, r.y]) |> normalize
-    assert SQL.all(query) == ~s{SELECT s0."x", s0."y" FROM "schema" AS s0}
+    assert SQL.all(query) == ~s{SELECT s0.x, s0.y FROM SCHEMA AS s0}
 
     query = Schema |> select([r], struct(r, [:x, :y])) |> normalize
     assert SQL.all(query) == ~s{SELECT s0."x", s0."y" FROM "schema" AS s0}
@@ -88,10 +88,10 @@ defmodule Snappydata.Ecto.Test do
 
   test "aggregates" do
     query = Schema |> select([r], count(r.x)) |> normalize
-    assert SQL.all(query) == ~s{SELECT count(s0."x") FROM "schema" AS s0}
+    assert SQL.all(query) == ~s{SELECT count(s0.x) FROM SCHEMA AS s0}
 
     query = Schema |> select([r], count(r.x, :distinct)) |> normalize
-    assert SQL.all(query) == ~s{SELECT count(DISTINCT s0."x") FROM "schema" AS s0}
+    assert SQL.all(query) == ~s{SELECT count(DISTINCT s0.x) FROM SCHEMA AS s0}
   end
 
   test "distinct" do
@@ -305,16 +305,16 @@ defmodule Snappydata.Ecto.Test do
 
   test "group by" do
     query = Schema |> group_by([r], r.x) |> select([r], r.x) |> normalize
-    assert SQL.all(query) == ~s{SELECT s0."x" FROM "schema" AS s0 GROUP BY s0."x"}
+    assert SQL.all(query) == ~s{SELECT s0.x FROM SCHEMA AS s0 GROUP BY s0.x}
 
     query = Schema |> group_by([r], 2) |> select([r], r.x) |> normalize
-    assert SQL.all(query) == ~s{SELECT s0."x" FROM "schema" AS s0 GROUP BY 2}
+    assert SQL.all(query) == ~s{SELECT s0.x FROM SCHEMA AS s0 GROUP BY 2}
 
     query = Schema |> group_by([r], [r.x, r.y]) |> select([r], r.x) |> normalize
-    assert SQL.all(query) == ~s{SELECT s0."x" FROM "schema" AS s0 GROUP BY s0."x", s0."y"}
+    assert SQL.all(query) == ~s{SELECT s0.x FROM SCHEMA AS s0 GROUP BY s0.x, s0.y}
 
     query = Schema |> group_by([r], []) |> select([r], r.x) |> normalize
-    assert SQL.all(query) == ~s{SELECT s0."x" FROM "schema" AS s0}
+    assert SQL.all(query) == ~s{SELECT s0.x FROM SCHEMA AS s0}
   end
 
   test "arrays and sigils" do
@@ -911,23 +911,23 @@ defmodule Snappydata.Ecto.Test do
       [~s|CREATE UNIQUE INDEX "posts_permalink_index" ON "posts" ("permalink") WHERE public|]
   end
 
-  test "create index concurrently" do
-    create = {:create, index(:posts, [:permalink], concurrently: true)}
-    assert execute_ddl(create) ==
-      [~s|CREATE INDEX CONCURRENTLY "posts_permalink_index" ON "posts" ("permalink")|]
-  end
+  # test "create index concurrently" do
+  #   create = {:create, index(:posts, [:permalink], concurrently: true)}
+  #   assert execute_ddl(create) ==
+  #     [~s|CREATE INDEX CONCURRENTLY "posts_permalink_index" ON "posts" ("permalink")|]
+  # end
 
-  test "create unique index concurrently" do
-    create = {:create, index(:posts, [:permalink], concurrently: true, unique: true)}
-    assert execute_ddl(create) ==
-      [~s|CREATE UNIQUE INDEX CONCURRENTLY "posts_permalink_index" ON "posts" ("permalink")|]
-  end
+  # test "create unique index concurrently" do
+  #   create = {:create, index(:posts, [:permalink], concurrently: true, unique: true)}
+  #   assert execute_ddl(create) ==
+  #     [~s|CREATE UNIQUE INDEX CONCURRENTLY "posts_permalink_index" ON "posts" ("permalink")|]
+  # end
 
-  test "create an index using a different type" do
-    create = {:create, index(:posts, [:permalink], using: :hash)}
-    assert execute_ddl(create) ==
-      [~s|CREATE INDEX "posts_permalink_index" ON "posts" USING hash ("permalink")|]
-  end
+  # test "create an index using a different type" do
+  #   create = {:create, index(:posts, [:permalink], using: :hash)}
+  #   assert execute_ddl(create) ==
+  #     [~s|CREATE INDEX "posts_permalink_index" ON "posts" USING hash ("permalink")|]
+  # end
 
   test "drop index" do
     drop = {:drop, index(:posts, [:id], name: "posts$main")}
