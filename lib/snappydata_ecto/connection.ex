@@ -280,22 +280,13 @@ if Code.ensure_loaded?(Snappyex) do
           [left, right] = args
           [op_to_binary(left, sources, query), op | op_to_binary(right, sources, query)]
         {:fun, fun} ->
-          if fun == "&" do
-            [idx, fields, _counter] = args
-            expr(fields, sources, query)
-          else
-            [fun, ?(, modifier, intersperse_map(args, ", ", &expr(&1, sources, query)), ?)]
-          end
+          [?(, modifier, intersperse_map(args, ", ", fn x -> "?" end), ?)]
       end
     end
 
-    defp expr(fields, sources, _query) when is_list(fields) do
-      {source} = sources
-      Enum.map_join(fields, ", ", &[elem(source, 1), ?., quote_name(&1)])
-    end
-
     defp expr({{:., _, [{:&, _, [idx]}, field]}, _, []}, sources, _query) when is_atom(field) do
-      quote_qualified_name(field, sources, idx)
+      {_, name, _} = elem(sources, idx)
+      "#{name}.#{quote_name(field)}"
     end
 
     defp expr({:&, _, [idx, fields, _counter]}, sources, query) do
@@ -306,7 +297,7 @@ if Code.ensure_loaded?(Snappyex) do
           "Please specify a schema or specify exactly which fields from " <>
           "#{inspect name} you desire")
       end
-      intersperse_map(fields, ", ", &[name, ?., quote_name(&1)])
+      Enum.map_join(fields, ", ", &[name, ?., quote_name(&1)])
     end
 
     defp expr({:in, _, [_left, []]}, _sources, _query) do
@@ -413,11 +404,6 @@ if Code.ensure_loaded?(Snappyex) do
         error!(nil, "bad table name #{inspect name}")
       end
       <<?", name::binary, ?">>
-    end
-
-    defp quote_qualified_name(name, sources, ix) do
-      {_, source, _} = elem(sources, ix)
-      [source, ?. | quote_name(name)]
     end
 
     defp intersperse_map(list, separator, mapper, acc \\ [])
