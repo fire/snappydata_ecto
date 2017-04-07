@@ -140,12 +140,12 @@ if Code.ensure_loaded?(Snappyex) do
     defp select_fields([], _sources, _query),
       do: "TRUE"
     defp select_fields(fields, sources, query) do
-      if([{:&, _, args}] = fields ) do
-        [idx, fields, _counter] = args
-        {_, name, schema} = elem(sources, idx)
-        Enum.map_join(fields, ", ", &"#{name}.#{&1}")
-      end
-      #Enum.map_join(fields, ", ", fn field -> expr(field, sources, query) end)
+      intersperse_map(fields, ", ", fn
+        {key, value} ->
+          [expr(value, sources, query), " AS " | quote_name(key)]
+        value ->
+          expr(value, sources, query)
+      end)
     end
 
     defp join(%Query{joins: []}, _sources), do: []
