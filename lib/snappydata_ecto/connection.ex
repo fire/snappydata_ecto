@@ -286,7 +286,7 @@ if Code.ensure_loaded?(Snappyex) do
 
     defp expr({{:., _, [{:&, _, [idx]}, field]}, _, []}, sources, _query) when is_atom(field) do
       {_, name, _} = elem(sources, idx)
-      "#{quote_name(name)}.#{quote_name(field)}"
+      "#{name}.#{quote_name(field)}"
     end
 
     defp expr({:&, _, [idx, fields, _counter]}, sources, query) do
@@ -297,7 +297,7 @@ if Code.ensure_loaded?(Snappyex) do
           "Please specify a schema or specify exactly which fields from " <>
           "#{inspect name} you desire")
       end
-      Enum.map_join(fields, ", ", &"#{name}.#{&1}")
+      Enum.map_join(fields, ", ", &[name, ?., quote_name(&1)])
     end
 
     defp expr({:in, _, [_left, []]}, _sources, _query) do
