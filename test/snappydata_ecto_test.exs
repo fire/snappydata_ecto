@@ -96,28 +96,28 @@ defmodule Snappydata.Ecto.Test do
 
   test "distinct" do
     query = Schema |> distinct([r], r.x) |> select([r], {r.x, r.y}) |> normalize
-    assert SQL.all(query) == ~s{SELECT DISTINCT ON (s0."x") s0."x", s0."y" FROM "schema" AS s0}
+    assert SQL.all(query) == ~s{SELECT DISTINCT ON (s0.x) s0.x, s0.y FROM SCHEMA AS s0}
 
     query = Schema |> distinct([r], desc: r.x) |> select([r], {r.x, r.y}) |> normalize
-    assert SQL.all(query) == ~s{SELECT DISTINCT ON (s0."x") s0."x", s0."y" FROM "schema" AS s0}
+    assert SQL.all(query) == ~s{SELECT DISTINCT ON (s0.x) s0.x, s0.y FROM SCHEMA AS s0}
 
     query = Schema |> distinct([r], 2) |> select([r], r.x) |> normalize
-    assert SQL.all(query) == ~s{SELECT DISTINCT ON (2) s0."x" FROM "schema" AS s0}
+    assert SQL.all(query) == ~s{SELECT DISTINCT ON (2) s0.x FROM SCHEMA AS s0}
 
     query = Schema |> distinct([r], [r.x, r.y]) |> select([r], {r.x, r.y}) |> normalize
-    assert SQL.all(query) == ~s{SELECT DISTINCT ON (s0."x", s0."y") s0."x", s0."y" FROM "schema" AS s0}
+    assert SQL.all(query) == ~s{SELECT DISTINCT ON (s0.x, s0.y) s0.x, s0.y FROM SCHEMA AS s0}
 
     query = Schema |> distinct([r], true) |> select([r], {r.x, r.y}) |> normalize
-    assert SQL.all(query) == ~s{SELECT DISTINCT s0."x", s0."y" FROM "schema" AS s0}
+    assert SQL.all(query) == ~s{SELECT DISTINCT s0.x, s0.y FROM SCHEMA AS s0}
 
     query = Schema |> distinct([r], false) |> select([r], {r.x, r.y}) |> normalize
-    assert SQL.all(query) == ~s{SELECT s0."x", s0."y" FROM "schema" AS s0}
+    assert SQL.all(query) == ~s{SELECT s0.x, s0.y FROM SCHEMA AS s0}
 
     query = Schema |> distinct(true) |> select([r], {r.x, r.y}) |> normalize
-    assert SQL.all(query) == ~s{SELECT DISTINCT s0."x", s0."y" FROM "schema" AS s0}
+    assert SQL.all(query) == ~s{SELECT DISTINCT s0.x, s0.y FROM SCHEMA AS s0}
 
     query = Schema |> distinct(false) |> select([r], {r.x, r.y}) |> normalize
-    assert SQL.all(query) == ~s{SELECT s0."x", s0."y" FROM "schema" AS s0}
+    assert SQL.all(query) == ~s{SELECT s0.x, s0.y FROM SCHEMA AS s0}
   end
 
   test "distinct with order by" do
