@@ -286,7 +286,7 @@ if Code.ensure_loaded?(Snappyex) do
 
     defp expr({{:., _, [{:&, _, [idx]}, field]}, _, []}, sources, _query) when is_atom(field) do
       {_, name, _} = elem(sources, idx)
-      "#{name}.#{field}"
+      "#{quote_name(name)}.#{quote_name(field)}"
     end
 
     defp expr({:&, _, [idx, fields, _counter]}, sources, query) do
@@ -391,20 +391,11 @@ if Code.ensure_loaded?(Snappyex) do
       if String.contains?(name, "\"") do
         error!(nil, "bad field name #{inspect name}")
       end
-      #<<?", name::binary, ?">>
-      name
-      |> String.upcase
+      <<?", name::binary, ?">>
     end
 
-    defp quote_table(nil, name) do
-      name
-      |> quote_table
-      |> String.upcase
-    end
-    defp quote_table(prefix, name) do
-      table = quote_table(prefix) <> "." <> quote_table(name)
-      String.upcase(table)
-    end
+    defp quote_table(nil, name),    do: quote_table(name)
+    defp quote_table(prefix, name), do: [quote_table(prefix), ?., quote_table(name)]
 
     defp quote_table(name) when is_atom(name),
       do: quote_table(Atom.to_string(name))
@@ -412,7 +403,7 @@ if Code.ensure_loaded?(Snappyex) do
       if String.contains?(name, "\"") do
         error!(nil, "bad table name #{inspect name}")
       end
-      name
+      <<?", name::binary, ?">>
     end
 
     defp intersperse_map(list, separator, mapper, acc \\ [])
