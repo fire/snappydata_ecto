@@ -151,7 +151,13 @@ if Code.ensure_loaded?(Snappyex) do
     defp join(%Query{joins: []}, _sources), do: []
     defp join(%Query{joins: joins} = query, sources) do
       [?\s | intersperse_map(joins, " ", fn
-        %JoinExpr{on: %QueryExpr{expr: expr}, qual: qual, ix: ix, source: source} ->
+          %JoinExpr{on: %QueryExpr{expr: expr}, qual: qual, ix: ix, source: source} ->
+          if :cross = qual do
+            error!(query, "SnappyData does not support cross joins.")
+          end
+          if :inner_lateral = qual do
+            error!(query, "SnappyData does not support inner lateral joins.")
+          end
           {join, name} = get_source(query, sources, ix, source)
           [join_qual(qual), " ", join, " AS ", name, " ON " | expr(expr, sources, query)]
       end)]

@@ -544,16 +544,12 @@ defmodule Snappydata.Ecto.Test do
             |> select([p, q], {p.id, q.z})
             |> where([p], p.id > 0 and p.id < ^100)
             |> normalize
-    assert SQL.all(query) ==
-           ~s{SELECT s0."id", f1."z" FROM "schema" AS s0 INNER JOIN LATERAL } <>
-           ~s{(SELECT * FROM schema2 AS s2 WHERE s2.id = s0."x" AND s2.field = $1) AS f1 ON TRUE } <>
-           ~s{WHERE ((s0."id" > 0) AND (s0."id" < $2))}
+    assert_raise Ecto.QueryError, fn -> SQL.all(query) end
   end
 
   test "cross join" do
     query = from(p in Schema, cross_join: c in Schema2, select: {p.id, c.id}) |> normalize()
-    assert SQL.all(query) ==
-           "SELECT s0.\"id\", s1.\"id\" FROM \"schema\" AS s0 CROSS JOIN \"schema2\" AS s1 ON TRUE"
+    assert_raise Ecto.QueryError, fn -> SQL.all(query) end
   end
 
   test "join produces correct bindings" do
