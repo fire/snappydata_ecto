@@ -150,11 +150,11 @@ if Code.ensure_loaded?(Snappyex) do
 
     defp join(%Query{joins: []}, _sources), do: []
     defp join(%Query{joins: joins} = query, sources) do
-      Enum.map_join(joins, " ", fn
+      [?\s | intersperse_map(joins, " ", fn
         %JoinExpr{on: %QueryExpr{expr: expr}, qual: qual, ix: ix, source: source} ->
           {join, name} = get_source(query, sources, ix, source)
           [join_qual(qual), " ", join, " AS ", name, " ON " | expr(expr, sources, query)]
-      end)
+      end)]
     end
 
     defp where(%Query{wheres: wheres} = query, sources) do
