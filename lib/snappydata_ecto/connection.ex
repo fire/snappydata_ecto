@@ -469,7 +469,7 @@ if Code.ensure_loaded?(Snappyex) do
                 quote_name(index.name),
                 " ON ",
                 quote_table(index.prefix, index.table),
-                "(#{fields})"]]
+                ?\s, ?(, fields, ?)]]
     end
 
     def execute_ddl({:create, %Constraint{}=constraint}) do
