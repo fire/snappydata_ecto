@@ -213,7 +213,7 @@ defmodule Snappydata.Ecto.Test do
 
     value = 13
     query = Schema |> select([r], fragment("downcase(?, ?)", r.x, ^value)) |> normalize
-    assert SQL.all(query) == ~s{SELECT downcase(s0."x", $1) FROM "schema" AS s0}
+    assert SQL.all(query) == ~s{SELECT downcase(s0."x", ?) FROM "schema" AS s0}
 
     query = Schema |> select([], fragment(title: 2)) |> normalize
     assert_raise Ecto.QueryError, fn ->

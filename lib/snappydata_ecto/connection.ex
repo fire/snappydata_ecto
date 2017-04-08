@@ -273,6 +273,10 @@ if Code.ensure_loaded?(Snappyex) do
       Enum.map_join(fields, ", ", &[elem(source, 1), ?., quote_name(&1)])
     end
 
+    defp expr({:^, [], [ix]}, _sources, _query) do
+      ["?"]
+    end
+
     defp expr({{:., _, [{:&, _, [idx]}, field]}, _, []}, sources, _query) when is_atom(field) do
       quote_qualified_name(field, sources, idx)
     end
@@ -317,27 +321,15 @@ if Code.ensure_loaded?(Snappyex) do
       all(query)
     end
 
+    defp expr({:fragment, _, [kw]}, _sources, query) when is_list(kw) or tuple_size(kw) == 3 do
+      error!(query, "SnappyData adapter does not support keyword or interpolated fragments")
+    end
+
     defp expr({:fragment, _, parts}, sources, query) do
-      Enum.map_join(parts, "", fn
+      Enum.map(parts, fn
         {:raw, part}  -> part
         {:expr, expr} -> expr(expr, sources, query)
       end)
-    end
-
-    defp expr({fun, _, args}, sources, query) when is_atom(fun) and is_list(args) do
-      {modifier, args} =
-        case args do
-          [rest, :distinct] -> {"DISTINCT ", [rest]}
-          _ -> {[], args}
-        end
-
-      case handle_call(fun, length(args)) do
-        {:binary_op, op} ->
-          [left, right] = args
-          [op_to_binary(left, sources, query), op | op_to_binary(right, sources, query)]
-        {:fun, fun} ->
-          [fun, ?(, modifier, intersperse_map(args, ", ", &expr(&1, sources, query)), ?)]
-      end
     end
 
     defp handle_call(fun, _arity), do: {:fun, Atom.to_string(fun)}
@@ -361,15 +353,32 @@ if Code.ensure_loaded?(Snappyex) do
     defp expr(false, _sources, _query), do: "FALSE"
 
     defp expr(literal, _sources, _query) when is_binary(literal) do
-      "'#{escape_string(literal)}'"
+      [?\', escape_string(literal), ?\']
     end
 
     defp expr(literal, _sources, _query) when is_integer(literal) do
-      String.Chars.Integer.to_string(literal)
+      Integer.to_string(literal)
     end
 
     defp expr(literal, _sources, _query) when is_float(literal) do
-      String.Chars.Float.to_string(literal) <> "::float"
+      [Float.to_string(literal) <> "::float"]
+    end
+
+    # At the very end
+    defp expr({fun, _, args}, sources, query) when is_atom(fun) and is_list(args) do
+      {modifier, args} =
+        case args do
+          [rest, :distinct] -> {"DISTINCT ", [rest]}
+          _ -> {[], args}
+        end
+
+      case handle_call(fun, length(args)) do
+        {:binary_op, op} ->
+          [left, right] = args
+          [op_to_binary(left, sources, query), op | op_to_binary(right, sources, query)]
+        {:fun, fun} ->
+          [fun, ?(, modifier, intersperse_map(args, ", ", &expr(&1, sources, query)), ?)]
+      end
     end
 
     defp op_to_binary({op, _, [_, _]} = expr, sources, query) when op in @binary_ops do
