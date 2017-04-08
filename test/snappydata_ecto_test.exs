@@ -255,7 +255,7 @@ defmodule Snappydata.Ecto.Test do
   test "nested expressions" do
     z = 123
     query = from(r in Schema, []) |> select([r], r.x > 0 and (r.y > ^(-z)) or true) |> normalize
-    assert SQL.all(query) == ~s{SELECT ((s0."x" > 0) AND (s0."y" > $1)) OR TRUE FROM "schema" AS s0}
+    assert SQL.all(query) == ~s{SELECT ((s0."x" > 0) AND (s0."y" > ?)) OR TRUE FROM "schema" AS s0}
   end
 
   test "in expression" do
