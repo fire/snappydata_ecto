@@ -130,7 +130,7 @@ if Code.ensure_loaded?(Snappyex) do
 
     defp from(%{from: from} = query, sources) do
       {from, name} = get_source(query, sources, 0, from)
-      [" FROM ", from, " AS " | [name]]
+      [" FROM ", from, " AS " | name]
     end
 
     defp select(%Query{select: %{fields: fields}} = query, select_distinct, sources) do
@@ -153,12 +153,12 @@ if Code.ensure_loaded?(Snappyex) do
       Enum.map_join(joins, " ", fn
         %JoinExpr{on: %QueryExpr{expr: expr}, qual: qual, ix: ix, source: source} ->
           {join, name} = get_source(query, sources, ix, source)
-          [" ", join_qual(qual), " ", join, " AS ", name, " ON " | expr(expr, sources, query)]
+          [join_qual(qual), " ", join, " AS ", name, " ON " | expr(expr, sources, query)]
       end)
     end
 
     defp where(%Query{wheres: wheres} = query, sources) do
-      boolean(" WHERE ", wheres, sources, query)
+      boolean("WHERE ", wheres, sources, query)
     end
 
     defp group_by(%Query{group_bys: group_bys} = query, sources) do
@@ -268,26 +268,21 @@ if Code.ensure_loaded?(Snappyex) do
     defp index_expr(literal) when is_binary(literal), do: literal
     defp index_expr(literal), do: quote_name(literal)
 
-    defp expr({fun, _, args}, sources, query) when is_atom(fun) and is_list(args) do
-      {modifier, args} =
-        case args do
-          [rest, :distinct] -> {"DISTINCT ", [rest]}
-          _ -> {[], args}
-        end
+    # defp expr({fun, _, args}, sources, query) when is_atom(fun) and is_list(args) do
+    #   {modifier, args} =
+    #     case args do
+    #       [rest, :distinct] -> {"DISTINCT ", [rest]}
+    #       _ -> {[], args}
+    #     end
 
-      case handle_call(fun, length(args)) do
-        {:binary_op, op} ->
-          [left, right] = args
-          [op_to_binary(left, sources, query), op | op_to_binary(right, sources, query)]
-        {:fun, fun} ->
-          if fun == "&" do
-            [idx, fields, _counter] = args
-            expr(fields, sources, query)
-          else
-            [fun, ?(, modifier, intersperse_map(args, ", ", &expr(&1, sources, query)), ?)]
-          end
-      end
-    end
+    #   case handle_call(fun, length(args)) do
+    #     {:binary_op, op} ->
+    #       [left, right] = args
+    #       [op_to_binary(left, sources, query), op | op_to_binary(right, sources, query)]
+    #     {:fun, fun} ->
+    #       [fun, ?(, modifier, intersperse_map(args, ", ", &expr(&1, sources, query)), ?)]
+    #   end
+    # end
 
     defp expr(fields, sources, _query) when is_list(fields) do
       {source} = sources
@@ -327,11 +322,11 @@ if Code.ensure_loaded?(Snappyex) do
     end
 
     defp expr({:is_nil, _, [arg]}, sources, query) do
-      "#{expr(arg, sources, query)} IS NULL"
+      [expr(arg, sources, query) | " IS NULL"]
     end
 
     defp expr({:not, _, [expr]}, sources, query) do
-      "NOT (" <> expr(expr, sources, query) <> ")"
+      ["NOT (", expr(expr, sources, query), ")"]
     end
 
     defp expr(%Ecto.SubQuery{query: query}, _sources, _query) do
@@ -417,7 +412,7 @@ if Code.ensure_loaded?(Snappyex) do
 
     defp quote_qualified_name(name, sources, ix) do
       {_, source, _} = elem(sources, ix)
-      [source, ?. | quote_name(name)]
+      [source, "." | quote_name(name)]
     end
 
     defp intersperse_map(list, separator, mapper, acc \\ [])
