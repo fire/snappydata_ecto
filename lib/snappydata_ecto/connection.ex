@@ -268,22 +268,6 @@ if Code.ensure_loaded?(Snappyex) do
     defp index_expr(literal) when is_binary(literal), do: literal
     defp index_expr(literal), do: quote_name(literal)
 
-    # defp expr({fun, _, args}, sources, query) when is_atom(fun) and is_list(args) do
-    #   {modifier, args} =
-    #     case args do
-    #       [rest, :distinct] -> {"DISTINCT ", [rest]}
-    #       _ -> {[], args}
-    #     end
-
-    #   case handle_call(fun, length(args)) do
-    #     {:binary_op, op} ->
-    #       [left, right] = args
-    #       [op_to_binary(left, sources, query), op | op_to_binary(right, sources, query)]
-    #     {:fun, fun} ->
-    #       [fun, ?(, modifier, intersperse_map(args, ", ", &expr(&1, sources, query)), ?)]
-    #   end
-    # end
-
     defp expr(fields, sources, _query) when is_list(fields) do
       {source} = sources
       Enum.map_join(fields, ", ", &[elem(source, 1), ?., quote_name(&1)])
@@ -338,6 +322,22 @@ if Code.ensure_loaded?(Snappyex) do
         {:raw, part}  -> part
         {:expr, expr} -> expr(expr, sources, query)
       end)
+    end
+
+    defp expr({fun, _, args}, sources, query) when is_atom(fun) and is_list(args) do
+      {modifier, args} =
+        case args do
+          [rest, :distinct] -> {"DISTINCT ", [rest]}
+          _ -> {[], args}
+        end
+
+      case handle_call(fun, length(args)) do
+        {:binary_op, op} ->
+          [left, right] = args
+          [op_to_binary(left, sources, query), op | op_to_binary(right, sources, query)]
+        {:fun, fun} ->
+          [fun, ?(, modifier, intersperse_map(args, ", ", &expr(&1, sources, query)), ?)]
+      end
     end
 
     defp handle_call(fun, _arity), do: {:fun, Atom.to_string(fun)}
