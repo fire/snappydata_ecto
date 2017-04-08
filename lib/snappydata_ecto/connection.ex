@@ -158,7 +158,7 @@ if Code.ensure_loaded?(Snappyex) do
     end
 
     defp where(%Query{wheres: wheres} = query, sources) do
-      boolean("WHERE ", wheres, sources, query)
+      boolean(" WHERE ", wheres, sources, query)
     end
 
     defp group_by(%Query{group_bys: group_bys} = query, sources) do
