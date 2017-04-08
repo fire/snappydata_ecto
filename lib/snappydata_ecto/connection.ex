@@ -174,20 +174,18 @@ if Code.ensure_loaded?(Snappyex) do
       end
     end
 
-    defp order_by(%Query{order_bys: order_bys} = query, distinct_exprs, sources) do
-      exprs =
-        Enum.map_join(order_bys, ", ", fn
-          %QueryExpr{expr: expr} ->
-            Enum.map_join(expr, ", ", &order_by_expr(&1, sources, query))
-        end)
+    defp order_by(%Query{order_bys: []}, _distinct, _sources), do: []
+    defp order_by(%Query{order_bys: order_bys} = query, distinct, sources) do
+      order_bys = Enum.flat_map(order_bys, & &1.expr)
+      [" ORDER BY " |
+       intersperse_map(distinct ++ order_bys, ", ", &order_by_expr(&1, sources, query))]
+    end
 
-      case {distinct_exprs, exprs} do
-        {_, ""} ->
-          []
-        {"", _} ->
-          " ORDER BY " <> exprs
-        {_, _}  ->
-          " ORDER BY " <> distinct_exprs <> ", " <> exprs
+    defp order_by_expr({dir, expr}, sources, query) do
+      str = expr(expr, sources, query)
+      case dir do
+        :asc  -> str
+        :desc -> [str | " DESC"]
       end
     end
 
