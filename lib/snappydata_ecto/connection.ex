@@ -266,11 +266,6 @@ if Code.ensure_loaded?(Snappyex) do
     defp index_expr(literal) when is_binary(literal), do: literal
     defp index_expr(literal), do: quote_name(literal)
 
-    defp expr(fields, sources, _query) when is_list(fields) do
-      {source} = sources
-      Enum.map_join(fields, ", ", &[elem(source, 1), ?., quote_name(&1)])
-    end
-
     defp expr({:^, [], [ix]}, _sources, _query) do
       ["?"]
     end
