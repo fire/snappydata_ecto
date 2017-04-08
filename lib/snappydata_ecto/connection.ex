@@ -577,7 +577,7 @@ if Code.ensure_loaded?(Snappyex) do
 
     defp get_source(query, sources, ix, source) do
       {expr, name, _schema} = elem(sources, ix)
-      {expr || "(" <> expr(source, sources, query) <> ")", name}
+      {expr || paren_expr(source, sources, query), name}
     end
 
     defp escape_string(value) when is_binary(value) do

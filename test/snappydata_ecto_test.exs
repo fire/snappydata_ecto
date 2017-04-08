@@ -516,9 +516,9 @@ defmodule Snappydata.Ecto.Test do
             |> where([p], p.id > 0 and p.id < ^100)
             |> normalize
     assert SQL.all(query) ==
-           ~s{SELECT s0."id", $1 FROM "schema" AS s0 INNER JOIN } <>
-           ~s{(SELECT * FROM schema2 AS s2 WHERE s2.id = s0."x" AND s2.field = $2) AS f1 ON TRUE } <>
-           ~s{WHERE ((s0."id" > 0) AND (s0."id" < $3))}
+           ~s{SELECT s0."id", ? FROM "schema" AS s0 INNER JOIN } <>
+           ~s{(SELECT * FROM schema2 AS s2 WHERE s2.id = s0."x" AND s2.field = ?) AS f1 ON TRUE } <>
+           ~s{WHERE ((s0."id" > 0) AND (s0."id" < ?))}
   end
 
   test "join with fragment and on defined" do
@@ -527,7 +527,7 @@ defmodule Snappydata.Ecto.Test do
             |> select([p], {p.id, ^0})
             |> normalize
     assert SQL.all(query) ==
-           ~s{SELECT s0."id", $1 FROM "schema" AS s0 INNER JOIN } <>
+           ~s{SELECT s0."id", ? FROM "schema" AS s0 INNER JOIN } <>
            ~s{(SELECT * FROM schema2) AS f1 ON f1."id" = s0."id"}
   end
 
