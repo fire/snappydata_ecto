@@ -272,10 +272,6 @@ if Code.ensure_loaded?(Snappyex) do
     defp index_expr(literal) when is_binary(literal), do: literal
     defp index_expr(literal), do: quote_name(literal)
 
-    defp expr({:^, [], [ix]}, _sources, _query) do
-      ["?"]
-    end
-
     defp expr({{:., _, [{:&, _, [idx]}, field]}, _, []}, sources, _query) when is_atom(field) do
       quote_qualified_name(field, sources, idx)
     end
