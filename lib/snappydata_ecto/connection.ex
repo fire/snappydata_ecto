@@ -296,16 +296,16 @@ if Code.ensure_loaded?(Snappyex) do
     end
 
     defp expr({:in, _, [left, right]}, sources, query) when is_list(right) do
-      args = Enum.map_join right, ",", &expr(&1, sources, query)
-      expr(left, sources, query) <> " IN (" <> args <> ")"
+      args = intersperse_map(right, ?,, &expr(&1, sources, query))
+      [expr(left, sources, query), " IN (", args, ?)]
     end
 
     defp expr({:in, _, [left, {:^, _, [ix, _]}]}, sources, query) do
-      expr(left, sources, query) <> " = ANY($#{ix+1})"
+      [expr(left, sources, query), " = ANY(?", ?)]
     end
 
     defp expr({:in, _, [left, right]}, sources, query) do
-      expr(left, sources, query) <> " = ANY(" <> expr(right, sources, query) <> ")"
+      [expr(left, sources, query), " = ANY(", expr(right, sources, query), ?)]
     end
 
     defp expr({:is_nil, _, [arg]}, sources, query) do
