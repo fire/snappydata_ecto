@@ -268,22 +268,6 @@ if Code.ensure_loaded?(Snappyex) do
     defp index_expr(literal) when is_binary(literal), do: literal
     defp index_expr(literal), do: quote_name(literal)
 
-    defp expr({fun, _, args}, sources, query) when is_atom(fun) and is_list(args) do
-      {modifier, args} =
-        case args do
-          [rest, :distinct] -> {"DISTINCT ", [rest]}
-          _ -> {[], args}
-        end
-
-      case handle_call(fun, length(args)) do
-        {:binary_op, op} ->
-          [left, right] = args
-          [op_to_binary(left, sources, query), op | op_to_binary(right, sources, query)]
-        {:fun, fun} ->
-          [?(, modifier, intersperse_map(args, ", ", fn x -> "?" end), ?)]
-      end
-    end
-
     defp expr({{:., _, [{:&, _, [idx]}, field]}, _, []}, sources, _query) when is_atom(field) do
       {_, name, _} = elem(sources, idx)
       "#{name}.#{field}"
@@ -366,6 +350,24 @@ if Code.ensure_loaded?(Snappyex) do
 
     defp expr(literal, _sources, _query) when is_float(literal) do
       String.Chars.Float.to_string(literal) <> "::float"
+    end
+
+    # At the very end
+
+    defp expr({fun, _, args}, sources, query) when is_atom(fun) and is_list(args) do
+      {modifier, args} =
+        case args do
+          [rest, :distinct] -> {"DISTINCT ", [rest]}
+          _ -> {[], args}
+        end
+
+      case handle_call(fun, length(args)) do
+        {:binary_op, op} ->
+          [left, right] = args
+          [op_to_binary(left, sources, query), op | op_to_binary(right, sources, query)]
+        {:fun, fun} ->
+          [?(, modifier, intersperse_map(args, ", ", fn x -> "?" end), ?)]
+      end
     end
 
     defp op_to_binary({op, _, [_, _]} = expr, sources, query) when op in @binary_ops do
