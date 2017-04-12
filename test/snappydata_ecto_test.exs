@@ -52,15 +52,15 @@ defmodule Snappydata.Ecto.Test do
 
   test "from" do
     query = Schema |> select([r], r.x) |> normalize
-    assert SQL.all(query) == ~s{SELECT s0.x FROM SCHEMA AS s0}
+    assert SQL.all(query) == ~s{SELECT s0."x" FROM "schema" AS s0}
   end
 
   test "from without schema" do
     query = "posts" |> select([r], r.x) |> normalize
-    assert SQL.all(query) == ~s{SELECT p0.x FROM POSTS AS p0}
+    assert SQL.all(query) == ~s{SELECT p0."x" FROM "posts" AS p0}
 
     query = "posts" |> select([:x]) |> normalize
-    assert SQL.all(query) == ~s{SELECT p0.x FROM POSTS AS p0}
+    assert SQL.all(query) == ~s{SELECT p0."x" FROM "posts" AS p0}
 
     assert_raise Ecto.QueryError, ~r"SnappyData requires a schema module when using selector \"p0\" but none was given. Please specify a schema or specify exactly which fields from \"p0\" you desire in query:\n\nfrom p in \"posts\",\n  select: p\n", fn ->
       SQL.all from(p in "posts", select: p) |> normalize()
@@ -69,7 +69,7 @@ defmodule Snappydata.Ecto.Test do
 
   test "from with subquery" do
     query = subquery("posts" |> select([r], %{x: r.x, y: r.y})) |> select([r], r.x) |> normalize
-    assert SQL.all(query) == ~s{SELECT s0.x FROM (SELECT p0.x, p0.y FROM POSTS AS p0) AS s0}
+    assert SQL.all(query) == ~s{SELECT s0."x" FROM (SELECT p0."x" AS "x", p0."y" AS "y" FROM "posts" AS p0) AS s0}
 
     query = subquery("posts" |> select([r], %{x: r.x, z: r.y})) |> select([r], r) |> normalize
     assert SQL.all(query) == ~s{SELECT s0."x", s0."z" FROM (SELECT p0."x" AS "x", p0."y" AS "z" FROM "posts" AS p0) AS s0}
@@ -77,10 +77,10 @@ defmodule Snappydata.Ecto.Test do
 
   test "select" do
     query = Schema |> select([r], {r.x, r.y}) |> normalize
-    assert SQL.all(query) == ~s{SELECT s0.x, s0.y FROM SCHEMA AS s0M SCHEMA AS s0}
+    assert SQL.all(query) == ~s{SELECT s0."x", s0."y" FROM "schema" AS s0}
 
     query = Schema |> select([r], [r.x, r.y]) |> normalize
-    assert SQL.all(query) == ~s{SELECT s0.x, s0.y FROM SCHEMA AS s0}
+    assert SQL.all(query) == ~s{SELECT s0."x", s0."y" FROM "schema" AS s0}
 
     query = Schema |> select([r], struct(r, [:x, :y])) |> normalize
     assert SQL.all(query) == ~s{SELECT s0."x", s0."y" FROM "schema" AS s0}
@@ -88,36 +88,36 @@ defmodule Snappydata.Ecto.Test do
 
   test "aggregates" do
     query = Schema |> select([r], count(r.x)) |> normalize
-    assert SQL.all(query) == ~s{SELECT count(s0.x) FROM SCHEMA AS s0}
+    assert SQL.all(query) == ~s{SELECT count(s0."x") FROM "schema" AS s0}
 
     query = Schema |> select([r], count(r.x, :distinct)) |> normalize
-    assert SQL.all(query) == ~s{SELECT count(DISTINCT s0.x) FROM SCHEMA AS s0}
+    assert SQL.all(query) == ~s{SELECT count(DISTINCT s0."x") FROM "schema" AS s0}
   end
 
   test "distinct" do
     query = Schema |> distinct([r], r.x) |> select([r], {r.x, r.y}) |> normalize
-    assert SQL.all(query) == ~s{SELECT DISTINCT ON (s0.x) s0.x, s0.y FROM SCHEMA AS s0}
+    assert SQL.all(query) == ~s{SELECT DISTINCT ON (s0."x") s0."x", s0."y" FROM "schema" AS s0}
 
     query = Schema |> distinct([r], desc: r.x) |> select([r], {r.x, r.y}) |> normalize
-    assert SQL.all(query) == ~s{SELECT DISTINCT ON (s0.x) s0.x, s0.y FROM SCHEMA AS s0}
+    assert SQL.all(query) == ~s{SELECT DISTINCT ON (s0."x") s0."x", s0."y" FROM "schema" AS s0}
 
     query = Schema |> distinct([r], 2) |> select([r], r.x) |> normalize
-    assert SQL.all(query) == ~s{SELECT DISTINCT ON (2) s0.x FROM SCHEMA AS s0}
+    assert SQL.all(query) == ~s{SELECT DISTINCT ON (2) s0."x" FROM "schema" AS s0}
 
     query = Schema |> distinct([r], [r.x, r.y]) |> select([r], {r.x, r.y}) |> normalize
-    assert SQL.all(query) == ~s{SELECT DISTINCT ON (s0.x, s0.y) s0.x, s0.y FROM SCHEMA AS s0}
+    assert SQL.all(query) == ~s{SELECT DISTINCT ON (s0."x", s0."y") s0."x", s0."y" FROM "schema" AS s0}
 
     query = Schema |> distinct([r], true) |> select([r], {r.x, r.y}) |> normalize
-    assert SQL.all(query) == ~s{SELECT DISTINCT s0.x, s0.y FROM SCHEMA AS s0}
+    assert SQL.all(query) == ~s{SELECT DISTINCT s0."x", s0."y" FROM "schema" AS s0}
 
     query = Schema |> distinct([r], false) |> select([r], {r.x, r.y}) |> normalize
-    assert SQL.all(query) == ~s{SELECT s0.x, s0.y FROM SCHEMA AS s0}
+    assert SQL.all(query) == ~s{SELECT s0."x", s0."y" FROM "schema" AS s0}
 
     query = Schema |> distinct(true) |> select([r], {r.x, r.y}) |> normalize
-    assert SQL.all(query) == ~s{SELECT DISTINCT s0.x, s0.y FROM SCHEMA AS s0}
+    assert SQL.all(query) == ~s{SELECT DISTINCT s0."x", s0."y" FROM "schema" AS s0}
 
     query = Schema |> distinct(false) |> select([r], {r.x, r.y}) |> normalize
-    assert SQL.all(query) == ~s{SELECT s0.x, s0.y FROM SCHEMA AS s0}
+    assert SQL.all(query) == ~s{SELECT s0."x", s0."y" FROM "schema" AS s0}
   end
 
   test "distinct with order by" do
@@ -127,7 +127,7 @@ defmodule Snappydata.Ecto.Test do
 
   test "where" do
     query = Schema |> where([r], r.x == 42) |> where([r], r.y != 43) |> select([r], r.x) |> normalize
-    assert SQL.all(query) == ~s{SELECT s0.x FROM SCHEMA AS s0 WHERE (s0.x = 42) AND (s0.y != 43)}
+    assert SQL.all(query) == ~s{SELECT s0."x" FROM "schema" AS s0 WHERE (s0."x" = 42) AND (s0."y" != 43)}
   end
 
   test "or_where" do
@@ -154,18 +154,18 @@ defmodule Snappydata.Ecto.Test do
 
   test "limit and offset" do
     query = Schema |> limit([r], 3) |> select([], true) |> normalize
-    assert SQL.all(query) == ~s{SELECT TRUE FROM SCHEMA AS s0 LIMIT 3}
+    assert SQL.all(query) == ~s{SELECT TRUE FROM "schema" AS s0 LIMIT 3}
 
     query = Schema |> offset([r], 5) |> select([], true) |> normalize
-    assert SQL.all(query) == ~s{SELECT TRUE FROM SCHEMA AS s0 OFFSET 5}
+    assert SQL.all(query) == ~s{SELECT TRUE FROM "schema" AS s0 OFFSET 5}
 
     query = Schema |> offset([r], 5) |> limit([r], 3) |> select([], true) |> normalize
-    assert SQL.all(query) == ~s{SELECT TRUE FROM SCHEMA AS s0 LIMIT 3 OFFSET 5}
+    assert SQL.all(query) == ~s{SELECT TRUE FROM "schema" AS s0 LIMIT 3 OFFSET 5}
   end
 
   test "lock" do
     query = Schema |> lock("FOR SHARE NOWAIT") |> select([], true) |> normalize
-    assert SQL.all(query) == ~s{SELECT TRUE FROM SCHEMA AS s0 FOR SHARE NOWAIT}
+    assert SQL.all(query) == ~s{SELECT TRUE FROM "schema" AS s0 FOR SHARE NOWAIT}
   end
 
   test "string escape" do
@@ -206,14 +206,14 @@ defmodule Snappydata.Ecto.Test do
 
   test "fragments" do
     query = Schema |> select([r], fragment("now")) |> normalize
-    assert SQL.all(query) == ~s{SELECT now FROM SCHEMA AS s0}
+    assert SQL.all(query) == ~s{SELECT now FROM "schema" AS s0}
 
     query = Schema |> select([r], fragment("downcase(?)", r.x)) |> normalize
-    assert SQL.all(query) == ~s{SELECT downcase(s0.X) FROM SCHEMA AS s0}
+    assert SQL.all(query) == ~s{SELECT downcase(s0."x") FROM "schema" AS s0}
 
     value = 13
     query = Schema |> select([r], fragment("downcase(?, ?)", r.x, ^value)) |> normalize
-    assert SQL.all(query) == ~s{SELECT downcase(s0.X, $1) FROM SCHEMA AS s0}
+    assert SQL.all(query) == ~s{SELECT downcase(s0."x", ?) FROM "schema" AS s0}
 
     query = Schema |> select([], fragment(title: 2)) |> normalize
     assert_raise Ecto.QueryError, fn ->
@@ -223,7 +223,7 @@ defmodule Snappydata.Ecto.Test do
 
   test "literals" do
     query = "schema" |> where(foo: true) |> select([], true) |> normalize
-    assert SQL.all(query) == ~s{SELECT TRUE FROM SCHEMA AS s0 WHERE (s0.foo = TRUE)}
+    assert SQL.all(query) == ~s{SELECT TRUE FROM "schema" AS s0 WHERE (s0."foo" = TRUE)}
 
     query = "schema" |> where(foo: false) |> select([], true) |> normalize
     assert SQL.all(query) == ~s{SELECT TRUE FROM "schema" AS s0 WHERE (s0."foo" = FALSE)}
@@ -255,7 +255,7 @@ defmodule Snappydata.Ecto.Test do
   test "nested expressions" do
     z = 123
     query = from(r in Schema, []) |> select([r], r.x > 0 and (r.y > ^(-z)) or true) |> normalize
-    assert SQL.all(query) == ~s{SELECT ((s0."x" > 0) AND (s0."y" > $1)) OR TRUE FROM "schema" AS s0}
+    assert SQL.all(query) == ~s{SELECT ((s0."x" > 0) AND (s0."y" > ?)) OR TRUE FROM "schema" AS s0}
   end
 
   test "in expression" do
@@ -289,15 +289,15 @@ defmodule Snappydata.Ecto.Test do
 
   test "having" do
     query = Schema |> having([p], p.x == p.x) |> select([], true) |> normalize
-    assert SQL.all(query) == ~s{SELECT TRUE FROM SCHEMA AS s0 HAVING (s0.x = s0.x)}
+    assert SQL.all(query) == ~s{SELECT TRUE FROM "schema" AS s0 HAVING (s0."x" = s0."x")}
 
     query = Schema |> having([p], p.x == p.x) |> having([p], p.y == p.y) |> select([], true) |> normalize
-    assert SQL.all(query) == ~s{SELECT TRUE FROM SCHEMA AS s0 HAVING (s0.x = s0.x) AND (s0.y = s0.y)}
+    assert SQL.all(query) == ~s{SELECT TRUE FROM "schema" AS s0 HAVING (s0."x" = s0."x") AND (s0."y" = s0."y")}
   end
 
   test "or_having" do
     query = Schema |> or_having([p], p.x == p.x) |> select([], true) |> normalize
-    assert SQL.all(query) == ~s{SELECT TRUE FROM SCHEMA AS s0 HAVING (s0.x = s0.x) OR (s0.y = s0.y)}
+    assert SQL.all(query) == ~s{SELECT TRUE FROM "schema" AS s0 HAVING (s0."x" = s0."x")}
 
     query = Schema |> or_having([p], p.x == p.x) |> or_having([p], p.y == p.y) |> select([], true) |> normalize
     assert SQL.all(query) == ~s{SELECT TRUE FROM "schema" AS s0 HAVING (s0."x" = s0."x") OR (s0."y" = s0."y")}
@@ -305,16 +305,16 @@ defmodule Snappydata.Ecto.Test do
 
   test "group by" do
     query = Schema |> group_by([r], r.x) |> select([r], r.x) |> normalize
-    assert SQL.all(query) == ~s{SELECT s0.x FROM SCHEMA AS s0 GROUP BY s0.x}
+    assert SQL.all(query) == ~s{SELECT s0."x" FROM "schema" AS s0 GROUP BY s0."x"}
 
     query = Schema |> group_by([r], 2) |> select([r], r.x) |> normalize
-    assert SQL.all(query) == ~s{SELECT s0.x FROM SCHEMA AS s0 GROUP BY 2}
+    assert SQL.all(query) == ~s{SELECT s0."x" FROM "schema" AS s0 GROUP BY 2}
 
     query = Schema |> group_by([r], [r.x, r.y]) |> select([r], r.x) |> normalize
-    assert SQL.all(query) == ~s{SELECT s0.x FROM SCHEMA AS s0 GROUP BY s0.x, s0.y}
+    assert SQL.all(query) == ~s{SELECT s0."x" FROM "schema" AS s0 GROUP BY s0."x", s0."y"}
 
     query = Schema |> group_by([r], []) |> select([r], r.x) |> normalize
-    assert SQL.all(query) == ~s{SELECT s0.x FROM SCHEMA AS s0}
+    assert SQL.all(query) == ~s{SELECT s0."x" FROM "schema" AS s0}
   end
 
   test "arrays and sigils" do
@@ -351,20 +351,20 @@ defmodule Snappydata.Ecto.Test do
     assert SQL.all(query) == String.trim(result)
   end
 
-  # test "fragments and types" do
-  #   query =
-  #     normalize from(e in "schema",
-  #       where: fragment("extract(? from ?) = ?", ^"month", e.start_time, type(^"4", :integer)),
-  #       where: fragment("extract(? from ?) = ?", ^"year", e.start_time, type(^"2015", :integer)),
-  #       select: true)
+  test "fragments and types" do
+    query =
+      normalize from(e in "schema",
+        where: fragment("extract(? from ?) = ?", ^"month", e.start_time, type(^"4", :integer)),
+        where: fragment("extract(? from ?) = ?", ^"year", e.start_time, type(^"2015", :integer)),
+        select: true)
 
-  #   result =
-  #     "SELECT TRUE FROM \"schema\" AS s0 " <>
-  #     "WHERE (extract($1 from s0.\"start_time\") = $2::integer) " <>
-  #     "AND (extract($3 from s0.\"start_time\") = $4::integer)"
+    result =
+      "SELECT TRUE FROM \"schema\" AS s0 " <>
+      "WHERE (extract($1 from s0.\"start_time\") = $2::integer) " <>
+      "AND (extract($3 from s0.\"start_time\") = $4::integer)"
 
-  #   assert SQL.all(query) == String.trim(result)
-  # end
+    assert SQL.all(query) == String.trim(result)
+  end
 
   test "fragments allow ? to be escaped with backslash" do
     query =
@@ -468,24 +468,25 @@ defmodule Snappydata.Ecto.Test do
   test "join" do
     query = Schema |> join(:inner, [p], q in Schema2, p.x == q.z) |> select([], true) |> normalize
     assert SQL.all(query) ==
-      ~s{SELECT TRUE FROM SCHEMA AS s0 INNER JOIN SCHEMA2 AS s1 ON s0.x = s1.z}
+           ~s{SELECT TRUE FROM "schema" AS s0 INNER JOIN "schema2" AS s1 ON s0."x" = s1."z"}
 
     query = Schema |> join(:inner, [p], q in Schema2, p.x == q.z)
                   |> join(:inner, [], Schema, true) |> select([], true) |> normalize
     assert SQL.all(query) ==
-      ~s{SELECT TRUE FROM SCHEMA AS s0 INNER JOIN SCHEMA2 AS s1 ON s0.x = s1.z } <> ~s{ INNER JOIN SCHEMA AS s2 ON TRUE}
+           ~s{SELECT TRUE FROM "schema" AS s0 INNER JOIN "schema2" AS s1 ON s0."x" = s1."z" } <>
+           ~s{INNER JOIN "schema" AS s2 ON TRUE}
   end
 
   test "join with nothing bound" do
     query = Schema |> join(:inner, [], q in Schema2, q.z == q.z) |> select([], true) |> normalize
     assert SQL.all(query) ==
-      ~s{SELECT TRUE FROM SCHEMA AS s0 INNER JOIN SCHEMA2 AS s1 ON s1.z = s1.z}
+           ~s{SELECT TRUE FROM "schema" AS s0 INNER JOIN "schema2" AS s1 ON s1."z" = s1."z"}
   end
 
   test "join without schema" do
     query = "posts" |> join(:inner, [p], q in "comments", p.x == q.z) |> select([], true) |> normalize
     assert SQL.all(query) ==
-      ~s{SELECT TRUE FROM POSTS AS p0 INNER JOIN COMMENTS AS c1 ON p0.x = c1.z}
+           ~s{SELECT TRUE FROM "posts" AS p0 INNER JOIN "comments" AS c1 ON p0."x" = c1."z"}
   end
 
   test "join with subquery" do
@@ -508,17 +509,17 @@ defmodule Snappydata.Ecto.Test do
            ~s{SELECT TRUE FROM "prefix"."schema" AS s0 INNER JOIN "prefix"."schema2" AS s1 ON s0."x" = s1."z"}
   end
 
-  # test "join with fragment" do
-  #   query = Schema
-  #           |> join(:inner, [p], q in fragment("SELECT * FROM schema2 AS s2 WHERE s2.id = ? AND s2.field = ?", p.x, ^10))
-  #           |> select([p], {p.id, ^0})
-  #           |> where([p], p.id > 0 and p.id < ^100)
-  #           |> normalize
-  #   assert SQL.all(query) ==
-  #          ~s{SELECT s0."id", $1 FROM "schema" AS s0 INNER JOIN } <>
-  #          ~s{(SELECT * FROM schema2 AS s2 WHERE s2.id = s0."x" AND s2.field = $2) AS f1 ON TRUE } <>
-  #          ~s{WHERE ((s0."id" > 0) AND (s0."id" < $3))}
-  # end
+  test "join with fragment" do
+    query = Schema
+            |> join(:inner, [p], q in fragment("SELECT * FROM schema2 AS s2 WHERE s2.id = ? AND s2.field = ?", p.x, ^10))
+            |> select([p], {p.id, ^0})
+            |> where([p], p.id > 0 and p.id < ^100)
+            |> normalize
+    assert SQL.all(query) ==
+           ~s{SELECT s0."id", ? FROM "schema" AS s0 INNER JOIN } <>
+           ~s{(SELECT * FROM schema2 AS s2 WHERE s2.id = s0."x" AND s2.field = ?) AS f1 ON TRUE } <>
+           ~s{WHERE ((s0."id" > 0) AND (s0."id" < ?))}
+  end
 
   test "join with fragment and on defined" do
     query = Schema
@@ -526,7 +527,7 @@ defmodule Snappydata.Ecto.Test do
             |> select([p], {p.id, ^0})
             |> normalize
     assert SQL.all(query) ==
-           ~s{SELECT s0."id", $1 FROM "schema" AS s0 INNER JOIN } <>
+           ~s{SELECT s0."id", ? FROM "schema" AS s0 INNER JOIN } <>
            ~s{(SELECT * FROM schema2) AS f1 ON f1."id" = s0."id"}
   end
 
@@ -534,25 +535,21 @@ defmodule Snappydata.Ecto.Test do
     inner = Ecto.Queryable.to_query(Schema2)
     query = from(p in Schema, left_join: c in ^inner, select: {p.id, c.id}) |> normalize()
     assert SQL.all(query) ==
-      "SELECT s0.id, s1.id FROM SCHEMA AS s0 LEFT OUTER JOIN SCHEMA2 AS s1 ON TRUE"
+           "SELECT s0.\"id\", s1.\"id\" FROM \"schema\" AS s0 LEFT OUTER JOIN \"schema2\" AS s1 ON TRUE"
   end
 
-  # test "lateral join with fragment" do
-  #   query = Schema
-  #           |> join(:inner_lateral, [p], q in fragment("SELECT * FROM schema2 AS s2 WHERE s2.id = ? AND s2.field = ?", p.x, ^10))
-  #           |> select([p, q], {p.id, q.z})
-  #           |> where([p], p.id > 0 and p.id < ^100)
-  #           |> normalize
-  #   assert SQL.all(query) ==
-  #          ~s{SELECT s0."id", f1."z" FROM "schema" AS s0 INNER JOIN LATERAL } <>
-  #          ~s{(SELECT * FROM schema2 AS s2 WHERE s2.id = s0."x" AND s2.field = $1) AS f1 ON TRUE } <>
-  #          ~s{WHERE ((s0."id" > 0) AND (s0."id" < $2))}
-  # end
+  test "lateral join with fragment" do
+    query = Schema
+            |> join(:inner_lateral, [p], q in fragment("SELECT * FROM schema2 AS s2 WHERE s2.id = ? AND s2.field = ?", p.x, ^10))
+            |> select([p, q], {p.id, q.z})
+            |> where([p], p.id > 0 and p.id < ^100)
+            |> normalize
+    assert_raise Ecto.QueryError, fn -> SQL.all(query) end
+  end
 
   test "cross join" do
     query = from(p in Schema, cross_join: c in Schema2, select: {p.id, c.id}) |> normalize()
-    assert SQL.all(query) ==
-           "SELECT s0.\"id\", s1.\"id\" FROM \"schema\" AS s0 CROSS JOIN \"schema2\" AS s1 ON TRUE"
+    assert_raise Ecto.QueryError, fn -> SQL.all(query) end
   end
 
   test "join produces correct bindings" do
@@ -560,7 +557,7 @@ defmodule Snappydata.Ecto.Test do
     query = from(p in query, join: c in Schema2, on: true, select: {p.id, c.id})
     query = normalize(query)
     assert SQL.all(query) ==
-      "SELECT s0.id, s2.id FROM SCHEMA AS s0 INNER JOIN SCHEMA2 AS s1 ON TRUE INNER JOIN SCHEMA2 AS s2 ON TRUE"
+           "SELECT s0.\"id\", s2.\"id\" FROM \"schema\" AS s0 INNER JOIN \"schema2\" AS s1 ON TRUE INNER JOIN \"schema2\" AS s2 ON TRUE"
   end
 
   ## Associations
@@ -587,19 +584,19 @@ defmodule Snappydata.Ecto.Test do
 
   test "insert" do
     query = SQL.insert(nil, "schema", [:x, :y], [[:x, :y]], {:raise, [], []}, [:id])
-    assert query == ~s{INSERT INTO APP.SCHEMA(X,Y) VALUES (?,?)}
+    assert query == ~s{INSERT INTO "schema" ("x","y") VALUES ($1,$2) RETURNING "id"}
 
     query = SQL.insert(nil, "schema", [:x, :y], [[:x, :y], [nil, :z]], {:raise, [], []}, [:id])
-    assert query == ~s{INSERT INTO APP.SCHEMA(X,Y) VALUES (?,?),(DEFAULT,?)}
+    assert query == ~s{INSERT INTO "schema" ("x","y") VALUES ($1,$2),(DEFAULT,$3) RETURNING "id"}
 
     query = SQL.insert(nil, "schema", [], [[]], {:raise, [], []}, [:id])
-    assert query == ~s{INSERT INTO APP.SCHEMA VALUES (DEFAULT)}
+    assert query == ~s{INSERT INTO "schema" VALUES (DEFAULT) RETURNING "id"}
 
     query = SQL.insert(nil, "schema", [], [[]], {:raise, [], []}, [])
-    assert query == ~s{INSERT INTO APP.SCHEMA VALUES (DEFAULT)}
+    assert query == ~s{INSERT INTO "schema" VALUES (DEFAULT)}
 
     query = SQL.insert("prefix", "schema", [], [[]], {:raise, [], []}, [])
-    assert query == ~s{INSERT INTO PREFIX.SCHEMA VALUES (DEFAULT)}
+    assert query == ~s{INSERT INTO "prefix"."schema" VALUES (DEFAULT)}
   end
 
   test "insert with on conflict" do
@@ -831,41 +828,41 @@ defmodule Snappydata.Ecto.Test do
 
   end
 
-  # test "alter table with prefix" do
-  #   alter = {:alter, table(:posts, prefix: :foo),
-  #            [{:add, :author_id, references(:author, prefix: :foo), []},
-  #             {:modify, :permalink_id, references(:permalinks, prefix: :foo), null: false}]}
+  test "alter table with prefix" do
+    alter = {:alter, table(:posts, prefix: :foo),
+             [{:add, :author_id, references(:author, prefix: :foo), []},
+              {:modify, :permalink_id, references(:permalinks, prefix: :foo), null: false}]}
 
-  #   assert execute_ddl(alter) == ["""
-  #   ALTER TABLE "foo"."posts"
-  #   ADD COLUMN "author_id" bigint CONSTRAINT "posts_author_id_fkey" REFERENCES "foo"."author"("id"),
-  #   ALTER COLUMN \"permalink_id\" TYPE bigint,
-  #   ADD CONSTRAINT "posts_permalink_id_fkey" FOREIGN KEY ("permalink_id") REFERENCES "foo"."permalinks"("id"),
-  #   ALTER COLUMN "permalink_id" SET NOT NULL
-  #   """ |> remove_newlines]
-  # end
+    assert execute_ddl(alter) == ["""
+    ALTER TABLE "foo"."posts"
+    ADD COLUMN "author_id" bigint CONSTRAINT "posts_author_id_fkey" REFERENCES "foo"."author"("id"),
+    ALTER COLUMN \"permalink_id\" TYPE bigint,
+    ADD CONSTRAINT "posts_permalink_id_fkey" FOREIGN KEY ("permalink_id") REFERENCES "foo"."permalinks"("id"),
+    ALTER COLUMN "permalink_id" SET NOT NULL
+    """ |> remove_newlines]
+  end
 
-  # test "alter table with serial primary key" do
-  #   alter = {:alter, table(:posts),
-  #            [{:add, :my_pk, :serial, [primary_key: true]}]}
+  test "alter table with serial primary key" do
+    alter = {:alter, table(:posts),
+             [{:add, :my_pk, :serial, [primary_key: true]}]}
 
-  #   assert execute_ddl(alter) == ["""
-  #   ALTER TABLE "posts"
-  #   ADD COLUMN "my_pk" serial,
-  #   ADD PRIMARY KEY ("my_pk")
-  #   """ |> remove_newlines]
-  # end
+    assert execute_ddl(alter) == ["""
+    ALTER TABLE "posts"
+    ADD COLUMN "my_pk" serial,
+    ADD PRIMARY KEY ("my_pk")
+    """ |> remove_newlines]
+  end
 
-  # test "alter table with bigserial primary key" do
-  #   alter = {:alter, table(:posts),
-  #            [{:add, :my_pk, :bigserial, [primary_key: true]}]}
+  test "alter table with bigserial primary key" do
+    alter = {:alter, table(:posts),
+             [{:add, :my_pk, :bigserial, [primary_key: true]}]}
 
-  #   assert execute_ddl(alter) == ["""
-  #   ALTER TABLE "posts"
-  #   ADD COLUMN "my_pk" bigserial,
-  #   ADD PRIMARY KEY ("my_pk")
-  #   """ |> remove_newlines]
-  # end
+    assert execute_ddl(alter) == ["""
+    ALTER TABLE "posts"
+    ADD COLUMN "my_pk" bigserial,
+    ADD PRIMARY KEY ("my_pk")
+    """ |> remove_newlines]
+  end
 
   test "create index" do
     create = {:create, index(:posts, [:category_id, :permalink])}
@@ -911,23 +908,23 @@ defmodule Snappydata.Ecto.Test do
       [~s|CREATE UNIQUE INDEX "posts_permalink_index" ON "posts" ("permalink") WHERE public|]
   end
 
-  # test "create index concurrently" do
-  #   create = {:create, index(:posts, [:permalink], concurrently: true)}
-  #   assert execute_ddl(create) ==
-  #     [~s|CREATE INDEX CONCURRENTLY "posts_permalink_index" ON "posts" ("permalink")|]
-  # end
+  test "create index concurrently" do
+    create = {:create, index(:posts, [:permalink], concurrently: true)}
+    assert execute_ddl(create) ==
+      [~s|CREATE INDEX CONCURRENTLY "posts_permalink_index" ON "posts" ("permalink")|]
+  end
 
-  # test "create unique index concurrently" do
-  #   create = {:create, index(:posts, [:permalink], concurrently: true, unique: true)}
-  #   assert execute_ddl(create) ==
-  #     [~s|CREATE UNIQUE INDEX CONCURRENTLY "posts_permalink_index" ON "posts" ("permalink")|]
-  # end
+  test "create unique index concurrently" do
+    create = {:create, index(:posts, [:permalink], concurrently: true, unique: true)}
+    assert execute_ddl(create) ==
+      [~s|CREATE UNIQUE INDEX CONCURRENTLY "posts_permalink_index" ON "posts" ("permalink")|]
+  end
 
-  # test "create an index using a different type" do
-  #   create = {:create, index(:posts, [:permalink], using: :hash)}
-  #   assert execute_ddl(create) ==
-  #     [~s|CREATE INDEX "posts_permalink_index" ON "posts" USING hash ("permalink")|]
-  # end
+  test "create an index using a different type" do
+    create = {:create, index(:posts, [:permalink], using: :hash)}
+    assert execute_ddl(create) ==
+      [~s|CREATE INDEX "posts_permalink_index" ON "posts" USING hash ("permalink")|]
+  end
 
   test "drop index" do
     drop = {:drop, index(:posts, [:id], name: "posts$main")}
@@ -954,19 +951,19 @@ defmodule Snappydata.Ecto.Test do
       [~s|ALTER TABLE "foo"."products" ADD CONSTRAINT "price_must_be_positive" CHECK (price > 0)|]
   end
 
-  # test "create exclusion constraint" do
-  #   create = {:create, constraint(:products, "price_must_be_positive", exclude: ~s|gist (int4range("from", "to", '[]') WITH &&)|)}
-  #   assert execute_ddl(create) ==
-  #     [~s|ALTER TABLE "products" ADD CONSTRAINT "price_must_be_positive" EXCLUDE USING gist (int4range("from", "to", '[]') WITH &&)|]
-  # end
+  test "create exclusion constraint" do
+    create = {:create, constraint(:products, "price_must_be_positive", exclude: ~s|gist (int4range("from", "to", '[]') WITH &&)|)}
+    assert execute_ddl(create) ==
+      [~s|ALTER TABLE "products" ADD CONSTRAINT "price_must_be_positive" EXCLUDE USING gist (int4range("from", "to", '[]') WITH &&)|]
+  end
 
-  # test "create constraint with comment" do
-  #   create = {:create, constraint(:products, "price_must_be_positive", check: "price > 0", prefix: "foo", comment: "comment")}
-  #   assert execute_ddl(create) == [remove_newlines("""
-  #   ALTER TABLE "foo"."products" ADD CONSTRAINT "price_must_be_positive" CHECK (price > 0)
-  #   """),
-  #   ~s|COMMENT ON CONSTRAINT "price_must_be_positive" ON "foo"."products" IS 'comment'|]
-  # end
+  test "create constraint with comment" do
+    create = {:create, constraint(:products, "price_must_be_positive", check: "price > 0", prefix: "foo", comment: "comment")}
+    assert execute_ddl(create) == [remove_newlines("""
+    ALTER TABLE "foo"."products" ADD CONSTRAINT "price_must_be_positive" CHECK (price > 0)
+    """),
+    ~s|COMMENT ON CONSTRAINT "price_must_be_positive" ON "foo"."products" IS 'comment'|]
+  end
 
   test "drop constraint" do
     drop = {:drop, constraint(:products, "price_must_be_positive")}
