@@ -2,7 +2,7 @@ defmodule Ecto.Adapters.SnappyData do
 
   # BASED ON https://github.com/elixir-ecto/ecto/blob/master/test/ecto/adapters/postgres_test.exs
   # Try to keep it synced
-  
+
   @moduledoc """
   """
 
@@ -75,7 +75,7 @@ defmodule Ecto.Adapters.SnappyData do
 
   def execute_sql(repo, definition, opts) do
     sql = @conn.execute_ddl(definition)
-    Logger.debug "#{inspect self()} execute_sql queried " <> sql 
+    Logger.debug "#{inspect self()} execute_sql queried " <> sql
     Ecto.Adapters.SQL.query!(repo, sql, [], opts)
   end
 
