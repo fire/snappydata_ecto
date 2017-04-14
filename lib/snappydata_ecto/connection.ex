@@ -130,7 +130,7 @@ if Code.ensure_loaded?(Snappyex) do
 
     defp from(%{from: from} = query, sources) do
       {from, name} = get_source(query, sources, 0, from)
-      [" FROM ", from, " AS " | name]
+      [" FROM ", from, " AS " | [name]]
     end
 
     defp select(%Query{select: %{fields: fields}} = query, select_distinct, sources) do
@@ -266,6 +266,22 @@ if Code.ensure_loaded?(Snappyex) do
     defp index_expr(literal) when is_binary(literal), do: literal
     defp index_expr(literal), do: quote_name(literal)
 
+    defp expr({fun, _, args}, sources, query) when is_atom(fun) and is_list(args) do
+      {modifier, args} =
+        case args do
+          [rest, :distinct] -> {"DISTINCT ", [rest]}
+          _ -> {[], args}
+        end
+
+      case handle_call(fun, length(args)) do
+        {:binary_op, op} ->
+          [left, right] = args
+          [op_to_binary(left, sources, query), op | op_to_binary(right, sources, query)]
+        {:fun, fun} ->
+          [?(, modifier, intersperse_map(args, ", ", fn x -> "?" end), ?)]
+      end
+    end
+
     defp expr({{:., _, [{:&, _, [idx]}, field]}, _, []}, sources, _query) when is_atom(field) do
       {_, name, _} = elem(sources, idx)
       "#{name}.#{field}"
@@ -300,11 +316,11 @@ if Code.ensure_loaded?(Snappyex) do
     end
 
     defp expr({:is_nil, _, [arg]}, sources, query) do
-      [expr(arg, sources, query) | " IS NULL"]
+      "#{expr(arg, sources, query)} IS NULL"
     end
 
     defp expr({:not, _, [expr]}, sources, query) do
-      ["NOT (", expr(expr, sources, query), ")"]
+      "NOT (" <> expr(expr, sources, query) <> ")"
     end
 
     defp expr(%Ecto.SubQuery{query: query}, _sources, _query) do
@@ -316,7 +332,7 @@ if Code.ensure_loaded?(Snappyex) do
     end
 
     defp expr({:fragment, _, parts}, sources, query) do
-      Enum.map(parts, fn
+      Enum.map_join(parts, "", fn
         {:raw, part}  -> part
         {:expr, expr} -> expr(expr, sources, query)
       end)
@@ -395,7 +411,9 @@ if Code.ensure_loaded?(Snappyex) do
       if String.contains?(name, "\"") do
         error!(nil, "bad field name #{inspect name}")
       end
-      <<?", name::binary, ?">>
+      #<<?", name::binary, ?">>
+      name
+      |> String.upcase
     end
 
     defp quote_table(nil, name) do
@@ -414,12 +432,7 @@ if Code.ensure_loaded?(Snappyex) do
       if String.contains?(name, "\"") do
         error!(nil, "bad table name #{inspect name}")
       end
-      <<?", name::binary, ?">>
-    end
-
-    defp quote_qualified_name(name, sources, ix) do
-      {_, source, _} = elem(sources, ix)
-      [source, "." | quote_name(name)]
+      name
     end
 
     defp intersperse_map(list, separator, mapper, acc \\ [])
