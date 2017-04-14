@@ -130,7 +130,7 @@ if Code.ensure_loaded?(Snappyex) do
 
     defp from(%{from: from} = query, sources) do
       {from, name} = get_source(query, sources, 0, from)
-      [" FROM ", from, " AS " | [name]]
+      [" FROM ", from, " AS " | name]
     end
 
     defp select(%Query{select: %{fields: fields}} = query, select_distinct, sources) do
@@ -316,11 +316,11 @@ if Code.ensure_loaded?(Snappyex) do
     end
 
     defp expr({:is_nil, _, [arg]}, sources, query) do
-      "#{expr(arg, sources, query)} IS NULL"
+      [expr(arg, sources, query) | " IS NULL"]
     end
 
     defp expr({:not, _, [expr]}, sources, query) do
-      "NOT (" <> expr(expr, sources, query) <> ")"
+      ["NOT (", expr(expr, sources, query), ")"]
     end
 
     defp expr(%Ecto.SubQuery{query: query}, _sources, _query) do
@@ -332,7 +332,7 @@ if Code.ensure_loaded?(Snappyex) do
     end
 
     defp expr({:fragment, _, parts}, sources, query) do
-      Enum.map_join(parts, "", fn
+      Enum.map(parts, fn
         {:raw, part}  -> part
         {:expr, expr} -> expr(expr, sources, query)
       end)
@@ -411,9 +411,7 @@ if Code.ensure_loaded?(Snappyex) do
       if String.contains?(name, "\"") do
         error!(nil, "bad field name #{inspect name}")
       end
-      #<<?", name::binary, ?">>
-      name
-      |> String.upcase
+      <<?", name::binary, ?">>
     end
 
     defp quote_table(nil, name) do
@@ -432,7 +430,12 @@ if Code.ensure_loaded?(Snappyex) do
       if String.contains?(name, "\"") do
         error!(nil, "bad table name #{inspect name}")
       end
-      name
+      <<?", name::binary, ?">>
+    end
+
+    defp quote_qualified_name(name, sources, ix) do
+      {_, source, _} = elem(sources, ix)
+      [source, "." | quote_name(name)]
     end
 
     defp intersperse_map(list, separator, mapper, acc \\ [])
