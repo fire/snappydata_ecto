@@ -130,7 +130,7 @@ if Code.ensure_loaded?(Snappyex) do
 
     defp from(%{from: from} = query, sources) do
       {from, name} = get_source(query, sources, 0, from)
-      [" FROM ", from, " AS " | [name]]
+      [" FROM ", from, " AS " | name]
     end
 
     defp select(%Query{select: %{fields: fields}} = query, select_distinct, sources) do
@@ -174,20 +174,18 @@ if Code.ensure_loaded?(Snappyex) do
       end
     end
 
-    defp order_by(%Query{order_bys: order_bys} = query, distinct_exprs, sources) do
-      exprs =
-        Enum.map_join(order_bys, ", ", fn
-          %QueryExpr{expr: expr} ->
-            Enum.map_join(expr, ", ", &order_by_expr(&1, sources, query))
-        end)
+    defp order_by(%Query{order_bys: []}, _distinct, _sources), do: []
+    defp order_by(%Query{order_bys: order_bys} = query, distinct, sources) do
+      order_bys = Enum.flat_map(order_bys, & &1.expr)
+      [" ORDER BY " |
+       intersperse_map(distinct ++ order_bys, ", ", &order_by_expr(&1, sources, query))]
+    end
 
-      case {distinct_exprs, exprs} do
-        {_, ""} ->
-          []
-        {"", _} ->
-          " ORDER BY " <> exprs
-        {_, _}  ->
-          " ORDER BY " <> distinct_exprs <> ", " <> exprs
+    defp order_by_expr({dir, expr}, sources, query) do
+      str = expr(expr, sources, query)
+      case dir do
+        :asc  -> str
+        :desc -> [str | " DESC"]
       end
     end
 
@@ -302,19 +300,23 @@ if Code.ensure_loaded?(Snappyex) do
     end
 
     defp expr({:is_nil, _, [arg]}, sources, query) do
-      "#{expr(arg, sources, query)} IS NULL"
+      [expr(arg, sources, query) | " IS NULL"]
     end
 
     defp expr({:not, _, [expr]}, sources, query) do
-      "NOT (" <> expr(expr, sources, query) <> ")"
+      ["NOT (", expr(expr, sources, query), ")"]
     end
 
     defp expr(%Ecto.SubQuery{query: query}, _sources, _query) do
       all(query)
     end
 
+    defp expr({:fragment, _, [kw]}, _sources, query) when is_list(kw) or tuple_size(kw) == 3 do
+      error!(query, "SnappyData adapter does not support keyword or interpolated fragments")
+    end
+
     defp expr({:fragment, _, parts}, sources, query) do
-      Enum.map_join(parts, "", fn
+      Enum.map(parts, fn
         {:raw, part}  -> part
         {:expr, expr} -> expr(expr, sources, query)
       end)
@@ -393,9 +395,7 @@ if Code.ensure_loaded?(Snappyex) do
       if String.contains?(name, "\"") do
         error!(nil, "bad field name #{inspect name}")
       end
-      #<<?", name::binary, ?">>
-      name
-      |> String.upcase
+      <<?", name::binary, ?">>
     end
 
     defp quote_table(nil, name) do
@@ -414,7 +414,12 @@ if Code.ensure_loaded?(Snappyex) do
       if String.contains?(name, "\"") do
         error!(nil, "bad table name #{inspect name}")
       end
-      name
+      <<?", name::binary, ?">>
+    end
+
+    defp quote_qualified_name(name, sources, ix) do
+      {_, source, _} = elem(sources, ix)
+      [source, "." | quote_name(name)]
     end
 
     defp intersperse_map(list, separator, mapper, acc \\ [])
