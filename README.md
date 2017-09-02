@@ -1,6 +1,6 @@
 # snappydata_ecto
 
-**TODO: Add description**
+Experimental Snappydata driver. Requires more QA before use in production.
 
 ## Installation
 
