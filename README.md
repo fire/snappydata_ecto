@@ -2,6 +2,14 @@
 
 Experimental Snappydata driver. Requires more QA before use in production.
 
+Requires SnappyData to be launched in Thrift's framed mode.
+
+See: 
+
+> thrift-framed-transport=(true|false): to use the thrift framed transport; this is not the recommended mode since it provides no advantages over the default with SnappyData's server implementation but has been provided for languages that only support framed transport
+
+https://github.com/SnappyDataInc/snappydata/blob/master/cluster/README-thrift.md
+
 ## Installation
 
 If [available in Hex](https://hex.pm/docs/publish), the package can be installed
