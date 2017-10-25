@@ -558,8 +558,8 @@ if Code.ensure_loaded?(Snappyex) do
     defp default_expr(:error, _),
       do: []
 
-    defp null_expr(false), do: "NOT NULL"
-    defp null_expr(true), do: "NULL"
+    defp null_expr(false), do: " NOT NULL"
+    defp null_expr(true), do: " NULL"
     defp null_expr(_), do: []
 
     ## Helpers
