@@ -47,13 +47,16 @@ if Code.ensure_loaded?(Snappyex) do
     def execute(conn, sql, params, opts) when is_binary(sql) do
       query = %Snappyex.Query{name: "", statement: sql}
       case DBConnection.prepare_execute(conn, query, params, opts) do
-        {:ok, _, query} -> {:ok, query}
+        {:ok, _, query} = ok -> ok
         {:error, err} -> {:error, err}
       end
     end
 
     def execute(conn, %{} = query, params, opts) do
-      DBConnection.execute(conn, query, params, opts)
+      case DBConnection.execute(conn, query, params, opts) do
+      {:ok, _result} = ok-> ok
+      {:error, err} -> {:error, err}
+      end
     end
 
     def insert(prefix, table, header, rows, _on_conflict, returning) do
