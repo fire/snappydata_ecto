@@ -58,21 +58,8 @@ defmodule Ecto.Adapters.SnappyData do
   def execute_ddl(repo, definition, opts) do
       definition = definition
       |> check_for_empty_prefix
-      |> upcase_table
       execute_sql(repo, definition, opts)
       :ok
-  end
-
-  def upcase_table({type, %Table{} = table, columns}) do
-    table = %{table | name: String.upcase to_string table.name}
-    table = %{table | prefix: String.upcase table.prefix}
-    {type, table, columns}
-  end
-
-  def upcase_table({type, %Ecto.Migration.Index{} = index}) do
-    index = %{index | name: String.upcase to_string index.name}
-    index = %{index | prefix: String.upcase index.prefix}
-    {type, index}
   end
 
   def check_for_empty_prefix({type, %Table{} = table, columns}) do
