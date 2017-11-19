@@ -44,7 +44,7 @@ if Code.ensure_loaded?(Snappyex) do
       DBConnection.prepare_execute(conn, query, params, opts)
     end
 
-    def execute(conn, sql, params, opts) when is_binary(sql) do
+    def execute(conn, sql, params, opts) when is_binary(sql) or is_list(sql) do
       query = %Snappyex.Query{name: "", statement: sql}
       case DBConnection.prepare_execute(conn, query, params, opts) do
         {:ok, _, result} ->
@@ -112,6 +112,27 @@ if Code.ensure_loaded?(Snappyex) do
     end
     defp insert_as({_, _, _}) do
       []
+    end
+
+    def update(prefix, table, fields, filters, returning) do
+      {fields, count} = intersperse_reduce(fields, ", ", 1, fn field, acc ->
+        {[quote_name(field), " = ?" ], acc + 1}
+      end)
+
+      {filters, _count} = intersperse_reduce(filters, " AND ", count, fn field, acc ->
+        {[quote_name(field), " = ?" ], acc + 1}
+      end)
+
+      ["UPDATE ", quote_table(prefix, table), " SET ",
+       fields, " WHERE ", filters | returning(returning)]
+    end
+
+    def delete(prefix, table, filters, returning) do
+      {filters, _} = intersperse_reduce(filters, " AND ", 1, fn field, acc ->
+        {[quote_name(field), " = ?" ], acc + 1}
+      end)
+
+      ["DELETE FROM ", quote_table(prefix, table), " WHERE ", filters | returning(returning)]
     end
 
     def all(query) do
@@ -232,6 +253,16 @@ if Code.ensure_loaded?(Snappyex) do
     defp paren_expr(expr, sources, query) do
       [?(, expr(expr, sources, query), ?)]
     end
+
+    defp returning(%Query{select: nil}, _sources),
+      do: []
+    defp returning(%Query{select: %{fields: fields}} = query, sources),
+      do: [" RETURNING " | select_fields(fields, sources, query)]
+
+    defp returning([]),
+      do: []
+    defp returning(returning),
+      do: [" RETURNING " | intersperse_map(returning, ", ", &quote_name/1)]
 
     defp create_names(%{prefix: prefix, sources: sources}) do
       create_names(prefix, sources, 0, tuple_size(sources)) |> List.to_tuple()
@@ -584,6 +615,18 @@ if Code.ensure_loaded?(Snappyex) do
 
     defp escape_string(value) when is_binary(value) do
       :binary.replace(value, "'", "''", [:global])
+    end
+
+    defp intersperse_reduce(list, separator, user_acc, reducer, acc \\ [])
+    defp intersperse_reduce([], _separator, user_acc, _reducer, acc),
+      do: {acc, user_acc}
+    defp intersperse_reduce([elem], _separator, user_acc, reducer, acc) do
+      {elem, user_acc} = reducer.(elem, user_acc)
+      {[acc | elem], user_acc}
+    end
+    defp intersperse_reduce([elem | rest], separator, user_acc, reducer, acc) do
+      {elem, user_acc} = reducer.(elem, user_acc)
+      intersperse_reduce(rest, separator, user_acc, reducer, [acc, elem, separator])
     end
 
     defp error!(nil, message) do
