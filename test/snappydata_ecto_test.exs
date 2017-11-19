@@ -1,6 +1,5 @@
-defmodule Snappydata.Ecto.Test do
+defmodule Ecto.Adapters.SnappyData.Test do
   use ExUnit.Case
-  doctest Snappydata.Ecto
 
   import Ecto.Query
 
