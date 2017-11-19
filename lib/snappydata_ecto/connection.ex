@@ -594,18 +594,18 @@ if Code.ensure_loaded?(Snappyex) do
     end
 
     defp ecto_to_db(:id),         do: "BIGINT"
-    defp ecto_to_db(:binary_id),  do: "BYTE(16)"
-    defp ecto_to_db(:string),     do: "VARCHAR"
+    defp ecto_to_db(:binary_id),  do: "CHAR(16) FOR BIT DATA"
+    defp ecto_to_db(:string),     do: "VARCHAR"    
+    defp ecto_to_db(:utc_datetime, _query),   do: "TIMESTAMP"
     defp ecto_to_db(:naive_datetime),   do: "TIMESTAMP"
     defp ecto_to_db(:boolean),    do: "SMALLINT"
     defp ecto_to_db(:binary),     do: "BLOB"
     defp ecto_to_db(:text),       do: "STRING"
     defp ecto_to_db(:uuid),       do: "BYTE(16)"
-    defp ecto_to_db(:map),        do: "STRING"
-    defp ecto_to_db({:map, _}),   do: "STRING"
+    defp ecto_to_db(:map),        do: "STRING" # TODO
+    defp ecto_to_db({:map, _}),   do: "STRING" # TODO
     defp ecto_to_db(:serial),     do: "INTEGER"
     defp ecto_to_db(:bigserial),  do: "BIGINT"
     defp ecto_to_db(other),       do: Atom.to_string(other)
-
   end
 end
