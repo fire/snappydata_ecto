@@ -493,12 +493,7 @@ if Code.ensure_loaded?(Snappyex) do
     def execute_ddl({:create, %Index{}=index}) do
       fields = Enum.map_join(index.columns, ", ", &index_expr/1)
 
-      [["CREATE ", if_do(index.unique, "UNIQUE "),
-                "INDEX ",
-                quote_name(index.name),
-                " ON ",
-                quote_table(index.prefix, index.table),
-                "(#{fields})"]]
+      "CREATE #{if_do(index.unique, "UNIQUE ")}INDEX #{quote_name(index.name)} ON #{quote_table(index.prefix, index.table)} (#{fields})"
     end
 
     def execute_ddl({:create, %Constraint{}=constraint}) do
