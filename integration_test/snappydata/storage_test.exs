@@ -1,4 +1,4 @@
-Code.require_file "../support/file_helpers.exs", __DIR__
+Code.require_file "../../deps/ecto/integration_test/support/file_helpers.exs", __DIR__
 
 defmodule Ecto.Integration.StorageTest do
   use ExUnit.Case, async: true

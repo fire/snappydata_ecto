@@ -25,3 +25,9 @@ Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_do
 and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
 be found at [https://hexdocs.pm/snappydata_ecto](https://hexdocs.pm/snappydata_ecto).
 
+## Integration Testing
+
+export MIX_ENV=snappydata
+export SNAPPYDATA_HOST="192.168.0.17"
+export SNAPPYDATA_PORT=1527^C
+mix test

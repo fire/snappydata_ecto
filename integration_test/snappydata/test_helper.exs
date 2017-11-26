@@ -1,3 +1,5 @@
+
+
 Logger.configure(level: :debug)
 
 ExUnit.start exclude: [:array_type, :read_after_writes, :returning,
@@ -14,9 +16,9 @@ Application.put_env(:ecto, :primary_key_type, :id)
 #)
 
 # Load support files
-Code.require_file "../support/repo.exs", __DIR__
-Code.require_file "../support/schemas.exs", __DIR__
-Code.require_file "../support/migration.exs", __DIR__
+Code.require_file "../../deps/ecto/integration_test/support/repo.exs", __DIR__
+Code.require_file "../../deps/ecto/integration_test/support/schemas.exs", __DIR__
+Code.require_file "../../deps/ecto/integration_test/support/migration.exs", __DIR__
 
 pool =
   case System.get_env("ECTO_POOL") || "poolboy" do
@@ -31,21 +33,20 @@ require SnappyData.Thrift.SecurityMechanism
 
 Application.put_env(:ecto, TestRepo,
   adapter: Ecto.Adapters.SnappyData,
-  url: Application.get_env(:ecto, :snappydata_test_url) <> "/ecto_test",
-  host: System.get_env("SNAPPYDATA_HOST") || "localhost",
-  port: 1531,
+  hostname: System.get_env("SNAPPYDATA_HOST") || "localhost",
+  port: System.get_env("SNAPPYDATA_PORT") || 1527,
   pool: Ecto.Adapters.SQL.Sandbox,
   ownership_pool: pool,
   client_host_name: "localhost", 
   client_id: "ElixirClient1|0x" <> Base.encode16(inspect self()),
   properties: %{"load-balance" => "false"}, 
+  schema: "app",
   for_xa: false, 
   security:  SnappyData.Thrift.SecurityMechanism.plain, 
   token_size: 16,
   use_string_for_decimal: false,
-  user_name: "APP",
-  password: "APP"
-  )
+  username: "APP",
+  password: "APP")
 
 defmodule Ecto.Integration.TestRepo do
   use Ecto.Integration.Repo, otp_app: :ecto
@@ -57,18 +58,18 @@ alias Ecto.Integration.PoolRepo
 Application.put_env(:ecto, PoolRepo,
   adapter: Ecto.Adapters.SnappyData,
   pool: pool,
-  url: Application.get_env(:ecto, :snappydata_test_url) <> "/ecto_test",
   pool_size: 10,
-  host: System.get_env("SNAPPYDATA_HOST") || "localhost",
-  port: 1531,  
+  hostname: System.get_env("SNAPPYDATA_HOST") || "localhost",
+  port: System.get_env("SNAPPYDATA_PORT") || 1527,
   client_host_name: "localhost", 
   client_id: "ElixirClient1|0x" <> Base.encode16(inspect self()),
-  properties: %{"load-balance" => "false"}, 
+  properties: %{"load-balance" => "false"},
+  schema: "app", 
   for_xa: false, 
   security:  SnappyData.Thrift.SecurityMechanism.plain, 
   token_size: 16,
   use_string_for_decimal: false,
-  user_name: "APP",
+  username: "APP",
   password: "APP")
 
 defmodule Ecto.Integration.PoolRepo do
