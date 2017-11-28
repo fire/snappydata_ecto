@@ -29,7 +29,7 @@ pool =
 # Pool repo for async, safe tests
 alias Ecto.Integration.TestRepo
 
-require SnappyData.Thrift.SecurityMechanism 
+require Thrift.Generated.SecurityMechanism
 
 Application.put_env(:ecto, TestRepo,
   adapter: Ecto.Adapters.SnappyData,
@@ -43,7 +43,7 @@ Application.put_env(:ecto, TestRepo,
   schema: "app",
   for_xa: false,
   ownership_timeout: 30_000,
-  security:  SnappyData.Thrift.SecurityMechanism.plain, 
+  security:  Thrift.Generated.SecurityMechanism.plain, 
   token_size: 16,
   use_string_for_decimal: false,
   username: "APP",
@@ -68,7 +68,7 @@ Application.put_env(:ecto, PoolRepo,
   schema: "app", 
   for_xa: false,
   ownership_timeout: 30_000,
-  security:  SnappyData.Thrift.SecurityMechanism.plain, 
+  security:  Thrift.Generated.SecurityMechanism.plain, 
   token_size: 16,
   use_string_for_decimal: false,
   username: "APP",
