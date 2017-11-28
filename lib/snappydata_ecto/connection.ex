@@ -472,7 +472,6 @@ if Code.ensure_loaded?(Snappyex) do
 
     @drops [:drop, :drop_if_exists]
 
-
     def execute_ddl({command, %Table{}=table, columns})
     when command in [:create, :create_if_not_exists] do
       options       = options_expr(table.options)
@@ -480,8 +479,12 @@ if Code.ensure_loaded?(Snappyex) do
                         nil -> ""
                         pk -> ", #{pk}"
                       end
-
-      "CREATE TABLE" <>
+      create_if_exists = if command == :create_if_not_exists do
+        " IF NOT EXISTS"
+      else
+        ""
+      end
+      "CREATE TABLE" <> create_if_exists <>
         " #{quote_table(table.prefix, table.name)}" <>
         " (#{column_definitions(table, columns)}#{pk_definition})" <> options
     end
