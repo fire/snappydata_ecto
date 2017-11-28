@@ -575,13 +575,13 @@ if Code.ensure_loaded?(Snappyex) do
     defp reference_on_update(_), do: ""
 
     defp default_expr({:ok, nil}, _type),
-      do: "DEFAULT NULL"
+      do: " DEFAULT NULL"
     defp default_expr({:ok, literal}, _type) when is_binary(literal),
-      do: "DEFAULT '#{escape_string(literal)}'"
+      do: " DEFAULT '#{escape_string(literal)}'"
     defp default_expr({:ok, literal}, _type) when is_number(literal) or is_boolean(literal),
-      do: "DEFAULT #{literal}"
+      do: " DEFAULT #{literal}"
     defp default_expr({:ok, {:fragment, expr}}, _type),
-      do: "DEFAULT #{expr}"
+      do: " DEFAULT #{expr}"
     defp default_expr({:ok, expr}, type),
       do: raise(ArgumentError, "unknown default `#{inspect expr}` for type `#{inspect type}`. " <>
                                ":default may be a string, number, boolean, empty list or a fragment(...)")
