@@ -19,4 +19,4 @@ script:
   - mix test --trace
 env:
   global:
-    - MIX_ENV=test
+    - MIX_ENV=snappydata
