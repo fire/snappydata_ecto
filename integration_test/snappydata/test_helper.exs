@@ -51,6 +51,11 @@ Application.put_env(:ecto, TestRepo,
 
 defmodule Ecto.Integration.TestRepo do
   use Ecto.Integration.Repo, otp_app: :ecto
+
+  def set_sandbox_mode() do
+    Ecto.Adapters.SQL.Sandbox.mode(TestRepo, :manual)
+    Process.flag(:trap_exit, true)
+  end
 end
 
 # Pool repo for non-async tests
@@ -98,6 +103,7 @@ end
 
 {:ok, _pid} = TestRepo.start_link
 {:ok, _pid} = PoolRepo.start_link
-:ok = Ecto.Migrator.up(TestRepo, 0, Ecto.Integration.Migration, log: false)
-Ecto.Adapters.SQL.Sandbox.mode(TestRepo, :manual)
-Process.flag(:trap_exit, true)
+case Ecto.Migrator.up(TestRepo, 0, Ecto.Integration.Migration, log: false) do
+  :ok -> Ecto.Integration.TestRepo.set_sandbox_mode()
+  :already_up -> nil
+end
