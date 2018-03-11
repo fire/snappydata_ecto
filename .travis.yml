@@ -7,8 +7,8 @@ elixir:
   - 1.4
 cache: apt
 before_install:
-  - wget https://github.com/SnappyDataInc/snappydata/releases/download/v0.8/snappydata-0.8-bin.tar.gz
-  - tar xvf snappydata-0.8-bin.tar.gz
+  - wget https://github.com/SnappyDataInc/snappydata/releases/download/v1.0.1/snappydata-1.0.1-bin.tar.gz
+  - tar xvf snappydata-1.0.1-bin.tar.gz
 before_script:
   - echo "localhost -client-bind-address=localhost -J-Djava.net.preferIPv4Stack=true -heap-size=4096m -thrift-framed-transport=true -thrift-server-port=1531 -thrift-binary-protocol=true" | tee -a ./snappydata-0.8-bin/conf/servers
   - echo "localhost -client-bind-address=localhost -J-Djava.net.preferIPv4Stack=true -heap-size=1024m -thrift-framed-transport=true -thrift-server-port=1530 -thrift-binary-protocol=true" | tee -a ./snappydata-0.8-bin/conf/locators
