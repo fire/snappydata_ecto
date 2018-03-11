@@ -28,6 +28,6 @@ be found at [https://hexdocs.pm/snappydata_ecto](https://hexdocs.pm/snappydata_e
 ## Integration Testing
 
 export MIX_ENV=snappydata
-export SNAPPYDATA_HOST="192.168.0.17"
-export SNAPPYDATA_PORT=1527^C
+export SNAPPYDATA_HOST="192.168.0.23"
+export SNAPPYDATA_PORT=32254
 mix test
