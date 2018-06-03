@@ -86,31 +86,31 @@ defmodule Ecto.Adapters.SnappyData.Test do
 
   test "from without schema" do
     query = "posts" |> select([r], r.x) |> normalize
-    assert all(query) == ~s{SELECT p0."x" FROM "posts" AS p0}
+    assert all(query) == ~s{SELECT p0."x" FROM POSTS AS p0}
 
     query = "Posts" |> select([:x]) |> normalize
-    assert all(query) == ~s{SELECT P0."x" FROM "Posts" AS P0}
+    assert all(query) == ~s{SELECT P0."x" FROM POSTS AS P0}
 
     query = "0posts" |> select([:x]) |> normalize
-    assert all(query) == ~s{SELECT t0."x" FROM "0posts" AS t0}
+    assert all(query) == ~s{SELECT t0."x" FROM 0POSTS AS t0}
 
-    assert_raise Ecto.QueryError,
-                 ~r"PostgreSQL does not support selecting all fields from \"posts\" without a schema",
-                 fn ->
-                   all from(p in "posts", select: p) |> normalize()
-                 end
+#    assert_raise Ecto.QueryError,
+#                 ~r"PostgreSQL does not support selecting all fields from \"posts\" without a schema",
+#                 fn ->
+#                   all from(p in "posts", select: p) |> normalize()
+#                 end
   end
 
   test "from with subquery" do
     query = subquery("posts" |> select([r], %{x: r.x, y: r.y})) |> select([r], r.x) |> normalize
 
     assert all(query) ==
-             ~s{SELECT s0."x" FROM (SELECT p0."x" AS "x", p0."y" AS "y" FROM "posts" AS p0) AS s0}
+             ~s{SELECT s0."x" FROM (SELECT p0."x" AS "x", p0."y" AS "y" FROM POSTS AS p0) AS s0}
 
     query = subquery("posts" |> select([r], %{x: r.x, z: r.y})) |> select([r], r) |> normalize
 
     assert all(query) ==
-             ~s{SELECT s0."x", s0."z" FROM (SELECT p0."x" AS "x", p0."y" AS "z" FROM "posts" AS p0) AS s0}
+             ~s{SELECT s0."x", s0."z" FROM (SELECT p0."x" AS "x", p0."y" AS "z" FROM POSTS AS p0) AS s0}
   end
 
   test "select" do
