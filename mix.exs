@@ -37,8 +37,8 @@ defmodule SnappydataEcto.Mixfile do
   # Type "mix help deps" for more examples and options
   defp deps do
     [
-      {:earmark, "~> 0.1", only: :dev},
-      {:ex_doc, "~> 0.7", only: :dev},
+      {:earmark, "~> 0.2", only: :dev},
+      {:ex_doc, "~> 0.12", only: :dev},
       {:ecto, "~> 2.2"},
       {:snappyex, git: "https://github.com/fire/snappyex.git", tag: "master"}
     ]
