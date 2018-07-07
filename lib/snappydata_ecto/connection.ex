@@ -340,6 +340,7 @@ if Code.ensure_loaded?(Snappyex) do
     defp create_alias(<<first, _rest::binary>>) when first in ?a..?z when first in ?A..?Z do
       <<first>>
     end
+
     defp create_alias(_) do
       "t"
     end

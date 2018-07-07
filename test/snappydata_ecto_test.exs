@@ -94,11 +94,11 @@ defmodule Ecto.Adapters.SnappyData.Test do
     query = "0posts" |> select([:x]) |> normalize
     assert all(query) == ~s{SELECT t0."x" FROM 0POSTS AS t0}
 
-#    assert_raise Ecto.QueryError,
-#                 ~r"PostgreSQL does not support selecting all fields from POSTS without a schema",
-#                 fn ->
-#                   all from(p in "posts", select: p) |> normalize()
-#                 end
+    #    assert_raise Ecto.QueryError,
+    #                 ~r"PostgreSQL does not support selecting all fields from POSTS without a schema",
+    #                 fn ->
+    #                   all from(p in "posts", select: p) |> normalize()
+    #                 end
   end
 
   test "from with subquery" do
@@ -144,8 +144,7 @@ defmodule Ecto.Adapters.SnappyData.Test do
 
     query = Schema |> distinct([r], [r.x, r.y]) |> select([r], {r.x, r.y}) |> normalize
 
-    assert all(query) ==
-             ~s{SELECT DISTINCT ON (s0."x", s0."y") s0."x", s0."y" FROM SCHEMA AS s0}
+    assert all(query) == ~s{SELECT DISTINCT ON (s0."x", s0."y") s0."x", s0."y" FROM SCHEMA AS s0}
 
     query = Schema |> distinct([r], true) |> select([r], {r.x, r.y}) |> normalize
     assert all(query) == ~s{SELECT DISTINCT s0."x", s0."y" FROM SCHEMA AS s0}
@@ -181,11 +180,13 @@ defmodule Ecto.Adapters.SnappyData.Test do
 
   test "or_where" do
     query =
-      Schema |> or_where([r], r.x == 42) |> or_where([r], r.y != 43) |> select([r], r.x)
+      Schema
+      |> or_where([r], r.x == 42)
+      |> or_where([r], r.y != 43)
+      |> select([r], r.x)
       |> normalize
 
-    assert all(query) ==
-             ~s{SELECT s0."x" FROM SCHEMA AS s0 WHERE (s0."x" = 42) OR (s0."y" != 43)}
+    assert all(query) == ~s{SELECT s0."x" FROM SCHEMA AS s0 WHERE (s0."x" = 42) OR (s0."y" != 43)}
 
     query =
       Schema
@@ -298,8 +299,7 @@ defmodule Ecto.Adapters.SnappyData.Test do
 
     query = SCHEMA |> where(foo: <<0, ?a, ?b, ?c>>) |> select([], true) |> normalize
 
-    assert all(query) ==
-             ~s{SELECT TRUE FROM SCHEMA AS s0 WHERE (s0."foo" = '\\x00616263'::bytea)}
+    assert all(query) == ~s{SELECT TRUE FROM SCHEMA AS s0 WHERE (s0."foo" = '\\x00616263'::bytea)}
 
     query = SCHEMA |> where(foo: 123) |> select([], true) |> normalize
     assert all(query) == ~s{SELECT TRUE FROM SCHEMA AS s0 WHERE (s0."foo" = 123)}
@@ -366,7 +366,10 @@ defmodule Ecto.Adapters.SnappyData.Test do
     assert all(query) == ~s{SELECT TRUE FROM SCHEMA AS s0 HAVING (s0."x" = s0."x")}
 
     query =
-      Schema |> having([p], p.x == p.x) |> having([p], p.y == p.y) |> select([], true)
+      Schema
+      |> having([p], p.x == p.x)
+      |> having([p], p.y == p.y)
+      |> select([], true)
       |> normalize
 
     assert all(query) ==
@@ -378,7 +381,10 @@ defmodule Ecto.Adapters.SnappyData.Test do
     assert all(query) == ~s{SELECT TRUE FROM SCHEMA AS s0 HAVING (s0."x" = s0."x")}
 
     query =
-      Schema |> or_having([p], p.x == p.x) |> or_having([p], p.y == p.y) |> select([], true)
+      Schema
+      |> or_having([p], p.x == p.x)
+      |> or_having([p], p.y == p.y)
+      |> select([], true)
       |> normalize
 
     assert all(query) ==
@@ -439,7 +445,8 @@ defmodule Ecto.Adapters.SnappyData.Test do
         from(
           e in "schema",
           where: fragment("extract(? from ?) = ?", ^"month", e.start_time, type(^"4", :integer)),
-          where: fragment("extract(? from ?) = ?", ^"year", e.start_time, type(^"2015", :integer)),
+          where:
+            fragment("extract(? from ?) = ?", ^"year", e.start_time, type(^"2015", :integer)),
           select: true
         )
       )
@@ -526,8 +533,7 @@ defmodule Ecto.Adapters.SnappyData.Test do
   test "update all with prefix" do
     query = from(m in Schema, update: [set: [x: 0]]) |> normalize(:update_all)
 
-    assert update_all(%{query | prefix: "prefix"}) ==
-             ~s{UPDATE "prefix".SCHEMA AS s0 SET "x" = 0}
+    assert update_all(%{query | prefix: "prefix"}) == ~s{UPDATE "prefix".SCHEMA AS s0 SET "x" = 0}
   end
 
   test "delete all" do
@@ -606,7 +612,9 @@ defmodule Ecto.Adapters.SnappyData.Test do
     posts = subquery("posts" |> where(title: ^"hello") |> select([r], %{x: r.x, y: r.y}))
 
     query =
-      "comments" |> join(:inner, [c], p in subquery(posts), true) |> select([_, p], p.x)
+      "comments"
+      |> join(:inner, [c], p in subquery(posts), true)
+      |> select([_, p], p.x)
       |> normalize
 
     assert all(query) ==
@@ -616,7 +624,9 @@ defmodule Ecto.Adapters.SnappyData.Test do
     posts = subquery("posts" |> where(title: ^"hello") |> select([r], %{x: r.x, z: r.y}))
 
     query =
-      "comments" |> join(:inner, [c], p in subquery(posts), true) |> select([_, p], p)
+      "comments"
+      |> join(:inner, [c], p in subquery(posts), true)
+      |> select([_, p], p)
       |> normalize
 
     assert all(query) ==
@@ -710,8 +720,7 @@ defmodule Ecto.Adapters.SnappyData.Test do
 
       assert all(query) ==
                ~s{SELECT s0."x", s0."y" FROM SCHEMA AS s0 INNER JOIN } <>
-                 ~s{(SELECT s0."x" AS "x", s0."y" AS "y" FROM SCHEMA AS s0) } <>
-                 ~s{AS s1 ON TRUE}
+                 ~s{(SELECT s0."x" AS "x", s0."y" AS "y" FROM SCHEMA AS s0) } <> ~s{AS s1 ON TRUE}
     end
 
     test "self join on subquery with fragment" do
