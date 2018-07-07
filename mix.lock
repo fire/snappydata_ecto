@@ -14,7 +14,7 @@
   "mimerl": {:hex, :mimerl, "1.0.2", "993f9b0e084083405ed8252b99460c4f0563e41729ab42d9074fd5e52439be88", [:rebar3], [], "hexpm"},
   "poolboy": {:hex, :poolboy, "1.5.1", "6b46163901cfd0a1b43d692657ed9d7e599853b3b21b95ae5ae0a777cf9b6ca8", [:rebar], [], "hexpm"},
   "ranch": {:hex, :ranch, "1.5.0", "f04166f456790fee2ac1aa05a02745cc75783c2bfb26d39faf6aefc9a3d3a58a", [:rebar3], [], "hexpm"},
-  "snappyex": {:git, "https://github.com/fire/snappyex.git", "d15a91881dadffa87ea5564faba99fb75f2204a6", [tag: "master"]},
+  "snappyex": {:git, "https://github.com/fire/snappyex.git", "332a08fd864146e8f4aff7d8c270bb3630af4bb2", [tag: "master"]},
   "ssl_verify_fun": {:hex, :ssl_verify_fun, "1.1.1", "28a4d65b7f59893bc2c7de786dec1e1555bd742d336043fe644ae956c3497fbe", [:make, :rebar], [], "hexpm"},
   "thrift": {:git, "https://github.com/pinterest/elixir-thrift.git", "45ce5a6e606e2e3bef5d10e4b59aef303e4b8abb", []},
   "timex": {:hex, :timex, "3.0.8", "71d5ebafcdc557c6c866cdc196c5054f587e7cd1118ad8937e2293d51fc85608", [:mix], [{:combine, "~> 0.7", [hex: :combine, repo: "hexpm", optional: false]}, {:gettext, "~> 0.10", [hex: :gettext, repo: "hexpm", optional: false]}, {:tzdata, "~> 0.1.8 or ~> 0.5", [hex: :tzdata, repo: "hexpm", optional: false]}], "hexpm"},
