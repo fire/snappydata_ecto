@@ -22,3 +22,4 @@ erl_crash.dump
 /config/cacerts.pem
 /config/cert.pem
 /config/key.pem
+/.elixir_ls/

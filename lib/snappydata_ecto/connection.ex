@@ -174,7 +174,7 @@ if Code.ensure_loaded?(Snappyex) do
       offset = offset(query, sources)
       lock = lock(query.lock)
 
-      IO.iodata_to_binary([
+      [
         select,
         from,
         join,
@@ -185,7 +185,7 @@ if Code.ensure_loaded?(Snappyex) do
         limit,
         offset,
         lock
-      ])
+      ]
     end
 
     # Remove
@@ -242,23 +242,13 @@ if Code.ensure_loaded?(Snappyex) do
       end
     end
 
-    defp order_by(%Query{order_bys: order_bys} = query, distinct_exprs, sources) do
-      exprs =
-        Enum.map_join(order_bys, ", ", fn %QueryExpr{expr: expr} ->
-          Enum.map_join(expr, ", ", &order_by_expr(&1, sources, query))
-        end)
-
-      case {distinct_exprs, exprs} do
-        {_, ""} ->
-          []
-
-        {"", _} ->
-          " ORDER BY " <> exprs
-
-        {_, _} ->
-          " ORDER BY " <> distinct_exprs <> ", " <> exprs
-      end
+    defp order_by(%Query{order_bys: []}, _distinct, _sources), do: []
+    defp order_by(%Query{order_bys: order_bys} = query, distinct, sources) do
+      order_bys = Enum.flat_map(order_bys, & &1.expr)
+      [" ORDER BY " |
+       intersperse_map(distinct ++ order_bys, ", ", &order_by_expr(&1, sources, query))]
     end
+
 
     defp having(%Query{havings: havings} = query, sources) do
       boolean(" HAVING ", havings, sources, query)
@@ -267,13 +257,13 @@ if Code.ensure_loaded?(Snappyex) do
     defp limit(%Query{limit: nil}, _sources), do: []
 
     defp limit(%Query{limit: %QueryExpr{expr: expr}} = query, sources) do
-      " LIMIT " <> expr(expr, sources, query)
+      [" LIMIT " | expr(expr, sources, query)]
     end
 
     defp offset(%Query{offset: nil}, _sources), do: []
 
     defp offset(%Query{offset: %QueryExpr{expr: expr}} = query, sources) do
-      " OFFSET " <> expr(expr, sources, query)
+      [" OFFSET " | expr(expr, sources, query)]
     end
 
     defp lock(nil), do: []
@@ -300,6 +290,10 @@ if Code.ensure_loaded?(Snappyex) do
 
     defp paren_expr(expr, sources, query) do
       [?(, expr(expr, sources, query), ?)]
+    end
+
+    defp expr({:^, [], [ix]}, _sources, _query) do
+      [??]
     end
 
     defp returning(%Query{select: nil}, _sources), do: []
@@ -414,7 +408,7 @@ if Code.ensure_loaded?(Snappyex) do
     end
 
     defp expr(%Ecto.SubQuery{query: query}, _sources, _query) do
-      all(query)
+      [?(, all(query), ?)]
     end
 
     defp expr({:fragment, _, parts}, sources, query) do
@@ -471,7 +465,7 @@ if Code.ensure_loaded?(Snappyex) do
           [op_to_binary(left, sources, query), op | op_to_binary(right, sources, query)]
 
         {:fun, fun} ->
-          [?(, modifier, intersperse_map(args, ", ", fn x -> "?" end), ?)]
+          [fun, ?(, modifier, intersperse_map(args, ", ", &expr(&1, sources, query)), ?)]
       end
     end
 
@@ -488,7 +482,7 @@ if Code.ensure_loaded?(Snappyex) do
 
       case dir do
         :asc -> str
-        :desc -> str <> " DESC"
+        :desc -> [str | " DESC"]
       end
     end
 
@@ -710,7 +704,7 @@ if Code.ensure_loaded?(Snappyex) do
 
     defp get_source(query, sources, ix, source) do
       {expr, name, _schema} = elem(sources, ix)
-      {expr || "(" <> expr(source, sources, query) <> ")", name}
+      {expr || expr(source, sources, query), name}
     end
 
     defp escape_string(value) when is_binary(value) do
