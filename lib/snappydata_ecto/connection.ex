@@ -243,12 +243,15 @@ if Code.ensure_loaded?(Snappyex) do
     end
 
     defp order_by(%Query{order_bys: []}, _distinct, _sources), do: []
+
     defp order_by(%Query{order_bys: order_bys} = query, distinct, sources) do
       order_bys = Enum.flat_map(order_bys, & &1.expr)
-      [" ORDER BY " |
-       intersperse_map(distinct ++ order_bys, ", ", &order_by_expr(&1, sources, query))]
-    end
 
+      [
+        " ORDER BY "
+        | intersperse_map(distinct ++ order_bys, ", ", &order_by_expr(&1, sources, query))
+      ]
+    end
 
     defp having(%Query{havings: havings} = query, sources) do
       boolean(" HAVING ", havings, sources, query)
@@ -563,8 +566,15 @@ if Code.ensure_loaded?(Snappyex) do
 
     def execute_ddl({:alter, %Table{} = table, changes}) do
       table_name = quote_table(table.prefix, table.name)
-      query = ["ALTER TABLE ", table_name, ?\s,
-               column_changes(table, changes), pk_definition(changes, ", ADD ")]
+
+      query = [
+        "ALTER TABLE ",
+        table_name,
+        ?\s,
+        column_changes(table, changes),
+        pk_definition(changes, ", ADD ")
+      ]
+
       [query]
     end
 
@@ -586,19 +596,15 @@ if Code.ensure_loaded?(Snappyex) do
       }"
     end
 
-    defp comments_on(_object, _name, nil), do:
-      error!(nil, "SnappyData adapter does not support comments")
-
+    defp comments_on(_object, _name, nil),
+      do: error!(nil, "SnappyData adapter does not support comments")
 
     defp pk_definition(columns, prefix) do
-      pks =
-        for {_, name, _, opts} <- columns,
-            opts[:primary_key],
-            do: name
+      pks = for {_, name, _, opts} <- columns, opts[:primary_key], do: name
 
       case pks do
         [] -> []
-        _  -> [prefix, "PRIMARY KEY (", intersperse_map(pks, ", ", &quote_name/1), ")"]
+        _ -> [prefix, "PRIMARY KEY (", intersperse_map(pks, ", ", &quote_name/1), ")"]
       end
     end
 
@@ -645,16 +651,19 @@ if Code.ensure_loaded?(Snappyex) do
 
     defp modify_null(name, opts) do
       case Keyword.get(opts, :null) do
-        true  -> [", ALTER COLUMN ", quote_name(name), " DROP NOT NULL"]
+        true -> [", ALTER COLUMN ", quote_name(name), " DROP NOT NULL"]
         false -> [", ALTER COLUMN ", quote_name(name), " SET NOT NULL"]
-        nil   -> []
+        nil -> []
       end
     end
 
     defp modify_default(name, type, opts) do
       case Keyword.fetch(opts, :default) do
-        {:ok, val} -> [", ALTER COLUMN ", quote_name(name), " SET", default_expr({:ok, val}, type)]
-        :error -> []
+        {:ok, val} ->
+          [", ALTER COLUMN ", quote_name(name), " SET", default_expr({:ok, val}, type)]
+
+        :error ->
+          []
       end
     end
 
@@ -669,23 +678,41 @@ if Code.ensure_loaded?(Snappyex) do
     end
 
     defp column_change(table, {:add, name, %Reference{} = ref, opts}) do
-      ["ADD COLUMN ", quote_name(name), ?\s, reference_column_type(ref.type, opts),
-       column_options(ref.type, opts), reference_expr(ref, table, name)]
+      [
+        "ADD COLUMN ",
+        quote_name(name),
+        ?\s,
+        reference_column_type(ref.type, opts),
+        column_options(ref.type, opts),
+        reference_expr(ref, table, name)
+      ]
     end
 
     defp column_change(_table, {:add, name, type, opts}) do
-      ["ADD COLUMN ", quote_name(name), ?\s, column_type(type, opts),
-       column_options(type, opts)]
+      ["ADD COLUMN ", quote_name(name), ?\s, column_type(type, opts), column_options(type, opts)]
     end
 
     defp column_change(table, {:modify, name, %Reference{} = ref, opts}) do
-      ["ALTER COLUMN ", quote_name(name), " TYPE ", reference_column_type(ref.type, opts),
-       constraint_expr(ref, table, name), modify_null(name, opts), modify_default(name, ref.type, opts)]
+      [
+        "ALTER COLUMN ",
+        quote_name(name),
+        " TYPE ",
+        reference_column_type(ref.type, opts),
+        constraint_expr(ref, table, name),
+        modify_null(name, opts),
+        modify_default(name, ref.type, opts)
+      ]
     end
 
     defp column_change(_table, {:modify, name, type, opts}) do
-      ["ALTER COLUMN ", quote_name(name), " TYPE ",
-       column_type(type, opts), modify_null(name, opts), modify_default(name, type, opts)]
+      [
+        "ALTER COLUMN ",
+        quote_name(name),
+        " TYPE ",
+        column_type(type, opts),
+        modify_null(name, opts),
+        modify_default(name, type, opts)
+      ]
     end
 
     defp column_change(_table, {:remove, name}), do: ["DROP COLUMN ", quote_name(name)]
@@ -711,10 +738,20 @@ if Code.ensure_loaded?(Snappyex) do
       ]
 
     defp constraint_expr(%Reference{} = ref, table, name),
-      do: [", ADD CONSTRAINT ", reference_name(ref, table, name), ?\s,
-           "FOREIGN KEY (", quote_name(name),
-           ") REFERENCES ", quote_table(table.prefix, ref.table), ?(, quote_name(ref.column), ?),
-           reference_on_delete(ref.on_delete), reference_on_update(ref.on_update)]
+      do: [
+        ", ADD CONSTRAINT ",
+        reference_name(ref, table, name),
+        ?\s,
+        "FOREIGN KEY (",
+        quote_name(name),
+        ") REFERENCES ",
+        quote_table(table.prefix, ref.table),
+        ?(,
+        quote_name(ref.column),
+        ?),
+        reference_on_delete(ref.on_delete),
+        reference_on_update(ref.on_update)
+      ]
 
     defp column_type({:array, type}, opts), do: column_type(type, opts) <> "[]"
 
@@ -812,9 +849,9 @@ if Code.ensure_loaded?(Snappyex) do
     defp ecto_to_db(:text), do: "STRING"
     defp ecto_to_db(:uuid), do: "CHAR(36)"
     # @TODO
-    #defp ecto_to_db(:map), do: "STRING"
+    # defp ecto_to_db(:map), do: "STRING"
     # @TODO
-    #defp ecto_to_db({:map, _}), do: "STRING"
+    # defp ecto_to_db({:map, _}), do: "STRING"
     defp ecto_to_db(:serial), do: "INTEGER"
     defp ecto_to_db(:bigserial), do: "BIGINT"
     defp ecto_to_db(other), do: Atom.to_string(other)
