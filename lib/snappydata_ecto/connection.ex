@@ -811,10 +811,10 @@ if Code.ensure_loaded?(Snappyex) do
     defp ecto_to_db(:binary), do: "BLOB"
     defp ecto_to_db(:text), do: "STRING"
     defp ecto_to_db(:uuid), do: "CHAR(36)"
-    # TODO
-    defp ecto_to_db(:map), do: "STRING"
-    # TODO
-    defp ecto_to_db({:map, _}), do: "STRING"
+    # @TODO
+    #defp ecto_to_db(:map), do: "STRING"
+    # @TODO
+    #defp ecto_to_db({:map, _}), do: "STRING"
     defp ecto_to_db(:serial), do: "INTEGER"
     defp ecto_to_db(:bigserial), do: "BIGINT"
     defp ecto_to_db(other), do: Atom.to_string(other)
