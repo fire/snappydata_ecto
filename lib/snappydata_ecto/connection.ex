@@ -75,7 +75,7 @@ if Code.ensure_loaded?(Snappyex) do
       end
     end
 
-    def insert(prefix, table, header, rows, _on_conflict, returning) do
+    def insert(prefix, table, header, rows, on_conflict, returning) do
       prefix =
         if prefix == nil do
           "APP"
@@ -92,12 +92,16 @@ if Code.ensure_loaded?(Snappyex) do
             ") " <> "VALUES " <> insert_all(rows, 1, "")
         end
 
-      IO.iodata_to_binary(["INSERT INTO ", quote_table(prefix, table), values])
+      [
+        "INSERT INTO ",
+        quote_table(prefix, table),
+        insert_as(on_conflict),
+        values,
+        returning(returning)
+      ]
     end
 
-    defp on_conflict({:raise, _, []}, _header) do
-      error!(nil, "on_conflict is not supported by SnappyData")
-    end
+    defp on_conflict({:raise, _, []}, _header), do: error!(nil, "on_conflict is not supported by SnappyData")
 
     defp on_conflict({:nothing, _, []}, [field | _]) do
       error!(nil, "on_conflict is not supported by SnappyData")
